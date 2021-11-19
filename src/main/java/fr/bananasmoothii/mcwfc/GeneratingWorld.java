@@ -3,6 +3,16 @@ package fr.bananasmoothii.mcwfc;
 import java.util.Random;
 
 public class GeneratingWorld {
-    private VirtualWorld<Pattern> virtualWorld;
-    private Random random;
+    private final VirtualSpace<WorldNode> world;
+    private final Random random;
+
+    public GeneratingWorld() {
+        world = new VirtualSpace<>();
+        random = new Random();
+    }
+
+    public GeneratingWorld(long seed) {
+        world = new VirtualSpace<>();
+        random = new Random(seed);
+    }
 }

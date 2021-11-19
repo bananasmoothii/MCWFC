@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -12,9 +13,9 @@ import java.util.NoSuchElementException;
  * no actual order. The Iterable implementation can be compared to three loops looping over X, Y and Z.
  * @param <T> the type of objects you will put inside
  */
-public class VirtualWorld<T> implements Iterable<VirtualWorld.ObjectWithCoordinates<T>> {
+public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordinates<T>> {
 
-    private static int enlargeAtOnce = 5;
+    private int enlargeAtOnce = 5;
 
     private T[][][] data;
 
@@ -31,23 +32,77 @@ public class VirtualWorld<T> implements Iterable<VirtualWorld.ObjectWithCoordina
     // these are always equal to Objects.length, Objects[0].length and Objects[0][0].length
     xArraySize, yArraySize, zArraySize;
 
-    public VirtualWorld() {
-        this(32, 32, 32);
+    private @Nullable T fill;
+
+    public VirtualSpace() {
+        this(10, 10, 10);
     }
 
-    
+    /**
+     * Constructs a VirtualSpace with the same size as the one passed in parameter, with the same <i>enlargeAtOnce</i>
+     * and with the same <i>fill</i> value (see {@link #setFill(Object)})
+     */
+    public VirtualSpace(@NotNull VirtualSpace<T> propertiesIndicator) {
+        xArraySize = propertiesIndicator.xArraySize;
+        yArraySize = propertiesIndicator.yArraySize;
+        zArraySize = propertiesIndicator.zArraySize;
+
+        //noinspection unchecked
+        data = (T[][][]) new Object[xArraySize][yArraySize][zArraySize];
+
+        xOffset = propertiesIndicator.xOffset;
+        yOffset = propertiesIndicator.yOffset;
+        zOffset = propertiesIndicator.zOffset;
+
+        xMin = propertiesIndicator.xMin;
+        yMin = propertiesIndicator.yMin;
+        zMin = propertiesIndicator.zMin;
+
+        xMax = propertiesIndicator.xMax;
+        yMax = propertiesIndicator.yMax;
+        zMax = propertiesIndicator.zMax;
+
+        enlargeAtOnce = propertiesIndicator.enlargeAtOnce;
+
+        fill = propertiesIndicator.fill;
+    }
+
     /**
      * New instance with a given x, y and z starting size. It will grow after if needed. the sizes are from one edge to
      * the opposite.
      */
-    public VirtualWorld(int xSize, int ySize, int zSize) {
-        xArraySize = xSize; yArraySize = ySize; zArraySize = zSize;
+    public VirtualSpace(int xSize, int ySize, int zSize) {
+        xArraySize = xSize;
+        yArraySize = ySize;
+        zArraySize = zSize;
         //noinspection unchecked
         data = (T[][][]) new Object[xArraySize][yArraySize][zArraySize];
         xOffset = xSize / 2; yOffset = ySize / 2; zOffset = zSize / 2;
     }
 
+    /**
+     * Replaces all null values by this. Note that this is more visual: the arrays won't change, but instead of returning
+     * null, it will now return what you give in here. This means that if you set {@code null} at a certain coordinate
+     * and get the element at the same coordinates, you won't get {@code null}, but {@code fill} (the argument you
+     * provide here).
+     */
+    public void setFill(@Nullable T fill) {
+        this.fill = fill;
+    }
+
+    public @Nullable T getFill() {
+        return fill;
+    }
+
     public @Nullable T get(int x, int y, int z) {
+        return replaceNullByFill(getWithoutFill(x, y, z));
+    }
+
+    /**
+     * @return {@code null} if there is no element at these coordinates, even if there is a <i>fill</i> set.
+     * @see #setFill(Object)
+     */
+    public @Nullable T getWithoutFill(int x, int y, int z) {
         try {
             return data[x + xOffset][y + yOffset][z + zOffset];
         } catch (IndexOutOfBoundsException e) {
@@ -150,7 +205,7 @@ public class VirtualWorld<T> implements Iterable<VirtualWorld.ObjectWithCoordina
                 zArraySize += totalAddingSpace;
                 zOffset += totalAddingSpace;
             }
-            zMin -= addingSpace;
+            zMin += addingSpace;
         } else if (addingSpace > 0) {
             if (zMax + addingSpace + zOffset >= zArraySize) {
                 for (int x = 0; x < xArraySize; x++) {
@@ -166,19 +221,56 @@ public class VirtualWorld<T> implements Iterable<VirtualWorld.ObjectWithCoordina
         }
     }
 
+    public T replaceNullByFill(@Nullable T element) {
+        return element == null ? fill : element;
+    }
+
     /**
-     * when the arrays need to be enlarged, it will directly grow for example 10, so it hasn't to copy arrays each time.
+     * when the arrays need to be enlarged, it will directly grow for example 5, so it hasn't to copy arrays each time.
      */
-    public static void setEnlargeAtOnce(int enlargeAtOnce) {
+    public void setEnlargeAtOnce(int enlargeAtOnce) {
         if (enlargeAtOnce < 1) throw new IllegalArgumentException("enlargeAtOnce must be >= 1");
-        VirtualWorld.enlargeAtOnce = enlargeAtOnce;
+        this.enlargeAtOnce = enlargeAtOnce;
     }
 
     /**
      * @see #setEnlargeAtOnce(int)
      */
-    public static int getEnlargeAtOnce() {
+    public int getEnlargeAtOnce() {
         return enlargeAtOnce;
+    }
+
+    /**
+     * This iterator won't return the <i>fill</i> value if the element at a certain position is {@code null}.
+     * @see #setFill(Object)
+     */
+    public Iterator<ObjectWithCoordinates<T>> iteratorWithoutFill() {
+        return new Iterator<>() {
+            private int currentX = xMin, currentY = yMin, currentZ = zMin;
+
+            @Override
+            @Contract(pure = true)
+            public boolean hasNext() {
+                return currentZ <= zMax && currentY <= yMax && currentX <= xMax;
+            }
+
+            @Override
+            public ObjectWithCoordinates<T> next() {
+                ObjectWithCoordinates<T> element = new ObjectWithCoordinates<>(getWithoutFill(currentX, currentY, currentZ),
+                                currentX, currentY, currentZ);
+                if (++currentZ > zMax) {
+                    currentZ = zMin;
+                    currentY++;
+                    if (currentY > yMax) {
+                        currentY = yMin;
+                        currentX++;
+                        if (currentX > xMax && currentY > yMax && currentZ > zMax)
+                            throw new NoSuchElementException("indexes above maximum");
+                    }
+                }
+                return element;
+            }
+        };
     }
 
     /**
@@ -194,22 +286,24 @@ public class VirtualWorld<T> implements Iterable<VirtualWorld.ObjectWithCoordina
             @Override
             @Contract(pure = true)
             public boolean hasNext() {
-                return currentZ < zMax || currentY < yMax || currentX < xMax;
+                return currentZ <= zMax && currentY <= yMax && currentX <= xMax;
             }
 
             @Override
             public ObjectWithCoordinates<T> next() {
-                if (++currentZ >= zMax) {
+                ObjectWithCoordinates<T> element = new ObjectWithCoordinates<>(get(currentX, currentY, currentZ),
+                        currentX, currentY, currentZ);
+                if (++currentZ > zMax) {
                     currentZ = zMin;
                     currentY++;
+                    if (currentY > yMax) {
+                        currentY = yMin;
+                        currentX++;
+                        if (currentX > xMax + 1 && currentY > yMax && currentZ > zMax)
+                            throw new NoSuchElementException("indexes above maximum");
+                    }
                 }
-                if (currentY >= yMax) {
-                    currentY = yMin;
-                    currentX++;
-                }
-                if (currentX >= xMax) throw new NoSuchElementException();
-                T c = get(currentX, currentY, currentZ);
-                return new ObjectWithCoordinates<>(c, currentX, currentY, currentZ);
+                return element;
             }
         };
     }
@@ -220,19 +314,80 @@ public class VirtualWorld<T> implements Iterable<VirtualWorld.ObjectWithCoordina
      */
     public static record ObjectWithCoordinates<T>(T object, int x, int y, int z) {}
 
+
+    /**
+     * @return all possible rotated and flipped versions of <i>source</i>
+     */
+    public List<VirtualSpace<T>> generateSiblings(boolean allowUpsideDown) {
+        return null;
+    }
+
+    /**
+     * @return a rotated version by <i>angle</i> degrees along the Z axis
+     */
+    @SuppressWarnings("SuspiciousNameCombination")
+    public VirtualSpace<T> rotateZ(@NotNull RotationAngle angle) { // TODO: remove all of this to make WorldNode not extend VirtualSpace but a three dimensional array
+        VirtualSpace<T> copy = new VirtualSpace<>(this);
+        switch (angle) {
+            case A0 -> {
+                // same as in copy()
+                for (int x = 0; x < xArraySize; x++) {
+                    for (int y = 0; y < yArraySize; y++) {
+                        System.arraycopy(data[x][y], 0, copy.data[x][y], 0, zArraySize);
+                    }
+                }
+            }
+            case A90 -> {
+                Iterator<ObjectWithCoordinates<T>> iter = iteratorWithoutFill();
+                while (iter.hasNext()) {
+                    ObjectWithCoordinates<T> object = iter.next();
+                    System.out.println(object.x + " " + object.y + " " + object.z + " < " + xMax + " " + yMax + " " + zMax);
+                    copy.set(object.object, object.y, object.x, object.z);
+                }
+            }
+            case A180 -> {
+
+            }
+        }
+        return copy;
+    }
+
+    public enum RotationAngle {
+        A0, A90, A180, A270
+    }
+
+
+    public VirtualSpace<T> copy() {
+        VirtualSpace<T> copy = new VirtualSpace<>(this);
+        for (int x = 0; x < xArraySize; x++) {
+            for (int y = 0; y < yArraySize; y++) {
+                System.arraycopy(data[x][y], 0, copy.data[x][y], 0, zArraySize);
+            }
+        }
+        return copy;
+    }
+
     /**
      * prints the layer zLayer
      */
     public void debugPrint(int zLayer) {
-        System.out.println("xMin = " + xMin + " ;  xMax = " + xMax + " ;  yMin = " + yMin + " ;  yMax = " + yMax);
+        System.out.println("z = " + zLayer + " ; xMin = " + xMin + " ;  xMax = " + xMax + " ;  yMin = " + yMin + " ;  yMax = " + yMax);
         for (int x = xMin + xOffset; x <= xMax + xOffset; x++) {
             for (int y = yMin + yOffset ; y <= yMax + yOffset; y++) {
                 T element = data[x][y][zLayer + zOffset];
-                System.out.print(element != null ? element : ' ');
+                System.out.print(element != null ? element : fill != null ? fill : ' ');
                 System.out.print(' ');
             }
             System.out.print('\n');
         }
+    }
+
+    public void debugPrintAllLayers() {
+        System.out.println('\n');
+        for (int z = zMin; z <= zMax; z++) {
+            debugPrint(z);
+        }
+        System.out.println('\n');
     }
 
 }
