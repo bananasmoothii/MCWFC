@@ -1,0 +1,8 @@
+name: MCWFC
+version: '${project.version}'
+main: fr.bananasmoothii.mcwfc.MCWFCPlugin
+api-version: 1.17
+prefix: MCWFC
+depend: [ FastAsyncWorldEdit ]
+authors: [ Bananasmoothii ]
+description: 'An implementation of WaveFunctionCollapse in minecraft: it takes an input and makes a bigger output'
