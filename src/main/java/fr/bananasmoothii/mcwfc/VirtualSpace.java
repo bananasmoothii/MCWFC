@@ -5,8 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * A "visrtual" is a three-dimensional array list that allows negative indexes. There is no "append" because there is
@@ -314,49 +314,6 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      */
     public static record ObjectWithCoordinates<T>(T object, int x, int y, int z) {}
 
-
-    /**
-     * @return all possible rotated and flipped versions of <i>source</i>
-     */
-    public List<VirtualSpace<T>> generateSiblings(boolean allowUpsideDown) {
-        return null;
-    }
-
-    /**
-     * @return a rotated version by <i>angle</i> degrees along the Z axis
-     */
-    @SuppressWarnings("SuspiciousNameCombination")
-    public VirtualSpace<T> rotateZ(@NotNull RotationAngle angle) { // TODO: remove all of this to make WorldNode not extend VirtualSpace but a three dimensional array
-        VirtualSpace<T> copy = new VirtualSpace<>(this);
-        switch (angle) {
-            case A0 -> {
-                // same as in copy()
-                for (int x = 0; x < xArraySize; x++) {
-                    for (int y = 0; y < yArraySize; y++) {
-                        System.arraycopy(data[x][y], 0, copy.data[x][y], 0, zArraySize);
-                    }
-                }
-            }
-            case A90 -> {
-                Iterator<ObjectWithCoordinates<T>> iter = iteratorWithoutFill();
-                while (iter.hasNext()) {
-                    ObjectWithCoordinates<T> object = iter.next();
-                    System.out.println(object.x + " " + object.y + " " + object.z + " < " + xMax + " " + yMax + " " + zMax);
-                    copy.set(object.object, object.y, object.x, object.z);
-                }
-            }
-            case A180 -> {
-
-            }
-        }
-        return copy;
-    }
-
-    public enum RotationAngle {
-        A0, A90, A180, A270
-    }
-
-
     public VirtualSpace<T> copy() {
         VirtualSpace<T> copy = new VirtualSpace<>(this);
         for (int x = 0; x < xArraySize; x++) {
@@ -365,6 +322,21 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
             }
         }
         return copy;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof VirtualSpace other) {
+            if (!Objects.equals(fill, other.fill)) return false;
+            Iterator<ObjectWithCoordinates<T>> thisIterator = iteratorWithoutFill();
+            @SuppressWarnings("unchecked")
+            Iterator<ObjectWithCoordinates<?>> objIterator = other.iteratorWithoutFill();
+            while (thisIterator.hasNext() && objIterator.hasNext()) {
+                if (!thisIterator.next().equals(objIterator.next())) return false;
+            }
+            return true;
+        }
+        return false;
     }
 
     /**

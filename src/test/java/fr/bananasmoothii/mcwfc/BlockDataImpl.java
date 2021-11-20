@@ -9,6 +9,9 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings({"MethodDoesntCallSuperMethod", "ConstantConditions", "ClassCanBeRecord"})
 public class BlockDataImpl implements BlockData {
 
+    public static final BlockDataImpl AIR = new BlockDataImpl(Material.AIR);
+    public static final BlockDataImpl STONE = new BlockDataImpl(Material.STONE);
+
     private final Material material;
 
     public BlockDataImpl(Material material) {
@@ -54,5 +57,10 @@ public class BlockDataImpl implements BlockData {
     @Override
     public SoundGroup getSoundGroup() {
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(material.name().charAt(0));
     }
 }

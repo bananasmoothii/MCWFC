@@ -3,7 +3,7 @@ package fr.bananasmoothii.mcwfc;
 import java.util.Random;
 
 public class GeneratingWorld {
-    private final VirtualSpace<WorldNode> world;
+    private final VirtualSpace<Piece> world;
     private final Random random;
 
     public GeneratingWorld() {
