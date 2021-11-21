@@ -1,6 +1,9 @@
 package fr.bananasmoothii.mcwfc;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
+
+import java.util.Set;
 
 import static fr.bananasmoothii.mcwfc.Piece.RotationAngle.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,5 +54,15 @@ class MCWFCTest {
         piece.set(BlockDataImpl.STONE, 0, 0, 0);
         assertEquals(piece,
                 piece.flipX().flipY().flipZ().flipX().flipY().flipZ());
+    }
+
+    @Test
+    void siblings() {
+        Piece piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
+        piece.set(BlockDataImpl.STONE, 0, 0, 0);
+        piece.set(BlockDataImpl.STONE, 0, 1, 3);
+        piece.debugPrint();
+        Set<@NotNull Piece> pieces = piece.generateSiblings(true);
+        pieces.forEach(Piece::debugPrint);
     }
 }

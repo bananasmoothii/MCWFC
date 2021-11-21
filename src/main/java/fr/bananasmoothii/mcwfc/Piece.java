@@ -5,8 +5,11 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+
+import static fr.bananasmoothii.mcwfc.Piece.RotationAngle.*;
 
 public class Piece {
 
@@ -74,10 +77,30 @@ public class Piece {
     }
 
     /**
-     * @return all possible rotated and flipped versions of <i>source</i>
+     * @return A set containing all possible rotated and flipped versions of this (it also contains this)
      */
-    public List<Piece> generateSiblings(boolean allowUpsideDown) {
-        return null;
+    public @NotNull Set<@NotNull Piece> generateSiblings(boolean allowUpsideDown) {
+        Set<@NotNull Piece> pieces = new HashSet<>();
+        pieces.add(this);
+        if (allowUpsideDown) {
+            pieces.addAll(generateSiblings(false));
+            pieces.addAll(rotateZ(D90).generateSiblings(false));
+            pieces.addAll(rotateZ(D180).generateSiblings(false));
+            pieces.addAll(rotateZ(D270).generateSiblings(false));
+            pieces.addAll(rotateX(D90).generateSiblings(false));
+            pieces.addAll(rotateX(D270).generateSiblings(false));
+        } else {
+            Piece r90 = rotateY(D90);
+            if (pieces.add(r90)) {
+                pieces.add(r90.flipX());
+                pieces.add(r90.flipZ());
+            }
+            pieces.add(rotateY(D180));
+            pieces.add(rotateY(D270));
+            pieces.add(flipX());
+            pieces.add(flipZ());
+        }
+        return pieces;
     }
 
     /**
@@ -263,6 +286,21 @@ public class Piece {
             for (int x = 0; x < xSize; x++) {
                 System.out.print(data[x][y][zLayer]);
                 System.out.print(' ');
+            }
+            System.out.print('\n');
+        }
+        System.out.print('\n');
+    }
+
+    @Contract(pure = true)
+    public void debugPrint() {
+        for (int y = 0; y < ySize; y++) {
+            for (int z = 0; z < zSize; z++) {
+                for (int x = 0; x < xSize; x++) {
+                    System.out.print(data[x][y][z]);
+                    System.out.print(' ');
+                }
+                System.out.print("   ");
             }
             System.out.print('\n');
         }
