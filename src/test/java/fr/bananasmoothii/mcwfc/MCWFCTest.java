@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class MCWFCTest {
 
     @Test
-    void set() {
+    void virtualSpaceSet() {
         VirtualSpace<String> space = new VirtualSpace<>();
         space.set("a", 1, 0, 0);
         space.set("b", -3, 0, 0);
@@ -27,7 +27,7 @@ class MCWFCTest {
     }
 
     @Test
-    void rotation() {
+    void pieceRotation() {
         Piece piece1 = new Piece(2, 3, 1, BlockDataImpl.AIR);
         piece1.set(BlockDataImpl.STONE, 1, 2, 0);
         piece1.set(BlockDataImpl.STONE, 0, 1, 0);
@@ -49,7 +49,7 @@ class MCWFCTest {
     }
 
     @Test
-    void flip() {
+    void pieceFlip() {
         Piece piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
         piece.set(BlockDataImpl.STONE, 0, 0, 0);
         assertEquals(piece,
@@ -57,12 +57,12 @@ class MCWFCTest {
     }
 
     @Test
-    void siblings() {
+    void pieceSiblings() {
         Piece piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
         piece.set(BlockDataImpl.STONE, 0, 0, 0);
         piece.set(BlockDataImpl.STONE, 0, 1, 3);
         piece.debugPrint();
         Set<@NotNull Piece> pieces = piece.generateSiblings(true);
-        pieces.forEach(Piece::debugPrint);
+        assertEquals(48, pieces.size());
     }
 }
