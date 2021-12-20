@@ -90,12 +90,25 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
         this.fill = fill;
     }
 
+    /**
+     * @see #setFill(Object)
+     */
     public @Nullable T getFill() {
         return fill;
     }
 
     public @Nullable T get(int x, int y, int z) {
         return replaceNullByFill(getWithoutFill(x, y, z));
+    }
+
+    /**
+     * Same as {@link #get(int, int, int)} but if the result is still {@code null} even with the
+     * {@link #setFill(Object) fill}, it will return the provided defaultValue.
+     */
+    public @NotNull T getOrDefault(int x, int y, int z, @NotNull T defaultValue) {
+        T value = get(x, y, z);
+        if (value == null) return defaultValue;
+        return value;
     }
 
     /**
@@ -337,6 +350,34 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
             return true;
         }
         return false;
+    }
+
+    public int xMin() {
+        return xMin;
+    }
+
+    public int yMin() {
+        return yMin;
+    }
+
+    public int zMin() {
+        return zMin;
+    }
+
+    public int xMax() {
+        return xMax;
+    }
+
+    public int yMax() {
+        return yMax;
+    }
+
+    public int zMax() {
+        return zMax;
+    }
+
+    public String getPrettyCoordinates() {
+        return xMin + ' ' + yMin + ' ' + zMin + " -> " + xMax + ' ' + yMax + ' ' + zMax;
     }
 
     /**

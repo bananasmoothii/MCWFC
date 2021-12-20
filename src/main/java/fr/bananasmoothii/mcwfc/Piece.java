@@ -1,19 +1,17 @@
 package fr.bananasmoothii.mcwfc;
 
+import fr.bananasmoothii.mcwfc.util.RotationAngle;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
-import static fr.bananasmoothii.mcwfc.Piece.RotationAngle.*;
+import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
 
 public class Piece {
 
-    private @NotNull BlockData[][] @NotNull[] data;
+    private final @NotNull BlockData[][] @NotNull[] data;
     public final int xSize, ySize, zSize;
 
     public Piece(int size, @NotNull BlockData fillBlock) {
@@ -70,13 +68,6 @@ public class Piece {
     }
 
     /**
-     * Represents various rotations in degrees
-     */
-    public enum RotationAngle {
-        D90, D180, D270
-    }
-
-    /**
      * @return A set containing all possible rotated and flipped versions of this (it also contains this)
      */
     public @NotNull Set<@NotNull Piece> generateSiblings(boolean allowUpsideDown) {
@@ -104,7 +95,7 @@ public class Piece {
     }
 
     /**
-     * @return a rotated version by <i>angle</i> degrees along the Y axis
+     * @return a rotated version by <i>angle</i> degrees along the X axis
      */
     @Contract(pure = true)
     public @NotNull Piece rotateX(@NotNull RotationAngle angle) {
@@ -305,5 +296,33 @@ public class Piece {
             System.out.print('\n');
         }
         System.out.print('\n');
+    }
+
+    public static List<Piece> generatePieces(@NotNull VirtualSpace<Piece> space, int pieceSize) {
+        ArrayList result = new ArrayList<>();
+        return null;
+    }
+
+    /**
+     * @param fill the block to set when encountering a null value
+     * @return the piece of size pieceSize from x, y, z to x+pieceSize, y+pieceSize, z+pieceSize
+     */
+    public static @NotNull Piece getPieceAt(@NotNull VirtualSpace<BlockData> space, int x, int y, int z, int pieceSize,
+                                            @NotNull BlockData fill) {
+        Objects.requireNonNull(fill);
+        if (x < space.xMin() || y < space.yMin() || z < space.zMin() || x + pieceSize > space.xMax() ||
+                y + pieceSize > space.yMax() || z + pieceSize > space.zMax())
+            throw new IllegalArgumentException("invalid coordinates for piece: " + x + ' ' + y + ' ' + z +
+                    " in VirtualSpace of size " + space.getPrettyCoordinates());
+
+        Piece piece = new Piece(pieceSize, fill);
+        for (int ix = x; ix < x + pieceSize; ix++) {
+            for (int iy = y; iy < y + pieceSize; iy++) {
+                for (int iz = z; iz < z + pieceSize; iz++) {
+                    piece.set(space.getOrDefault(ix, iy, iz, fill), ix - x, iy - y, iz - z);
+                }
+            }
+        }
+        return piece;
     }
 }

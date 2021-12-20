@@ -1,14 +1,15 @@
 package fr.bananasmoothii.mcwfc;
 
+import fr.bananasmoothii.mcwfc.util.Face;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static fr.bananasmoothii.mcwfc.Piece.RotationAngle.*;
+import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class MCWFCTest {
+class LittleTests {
 
     @Test
     void virtualSpaceSet() {
@@ -58,11 +59,47 @@ class MCWFCTest {
 
     @Test
     void pieceSiblings() {
-        Piece piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
-        piece.set(BlockDataImpl.STONE, 0, 0, 0);
-        piece.set(BlockDataImpl.STONE, 0, 1, 3);
-        piece.debugPrint();
-        Set<@NotNull Piece> pieces = piece.generateSiblings(true);
-        assertEquals(48, pieces.size());
+        Piece piece;
+        Set<@NotNull Piece> pieces;
+        {
+            piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
+            piece.set(BlockDataImpl.STONE, 0, 0, 0);
+            piece.set(BlockDataImpl.STONE, 0, 1, 3);
+            piece.debugPrint();
+            pieces = piece.generateSiblings(true);
+            assertEquals(48, pieces.size());
+        }
+        {
+            piece = new Piece(3, 3, 3, BlockDataImpl.AIR);
+            pieces = piece.generateSiblings(true);
+            assertEquals(1, pieces.size());
+        }
+    }
+
+    @Test
+    void faceRotationFlip() {
+        for (Face face : Face.values()) {
+            System.out.println(face.name() + ": " + face.getModX() + ' ' + face.getModY() + ' ' + face.getModZ());
+        }
+        Face face1 = Face.NORTH_WEST;
+        Face face2 = Face.DOWN;
+        assertEquals(face1, face1
+                .rotateX(D270)
+                .rotateY(D90)
+                .rotateZ(D180)
+                .rotateX(D90)
+                .rotateY(D180)
+                .rotateZ(D90));
+        assertEquals(face2, face2
+                .rotateX(D270)
+                .rotateY(D90)
+                .rotateZ(D180)
+                .rotateX(D90)
+                .rotateY(D180)
+                .rotateZ(D90));
+        assertEquals(face1, face1
+                .flipX().flipY().flipZ().flipX().flipY().flipZ());
+        assertEquals(face2, face2
+                .flipX().flipY().flipZ().flipX().flipY().flipZ());
     }
 }
