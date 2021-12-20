@@ -375,6 +375,78 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     public int zMax() {
         return zMax;
     }
+    
+    public int xSize() {
+        return Math.abs(xMin) + Math.abs(xMax);
+    }
+    
+    public int ySize() {
+        return Math.abs(yMin) + Math.abs(yMax);
+    }
+    
+    public int zSize() {
+        return Math.abs(zMin) + Math.abs(zMax);
+    }
+
+    /**
+     * if some coordinates are out of bounds, it will take them back in the bounds. This means that if you have a list
+     * of 3 elements, it will reformat your coordinates modulo (%) 3. For exemple, if you call element of index 5 in
+     * that list, you will get the element of index 2 because {@code 5%3=2}. In a {@link VirtualSpace}, this means that
+     * if you get too far away and cross one side, you will pop up at the opposite site.
+     */
+    public int xInBounds(int x) {
+        int currentXSize = xSize();
+        if (x < xMin) {
+            while (x < xMin) {
+                x += currentXSize;
+            }
+            return x;
+        }
+        else if (x > xMax) {
+            while (x > xMax) {
+                x -= currentXSize;
+            }
+        }
+        return x;
+    }
+
+    /**
+     * @see #xInBounds(int)
+     */
+    public int yInBounds(int y) {
+        int currentYSize = ySize();
+        if (y < yMin) {
+            while (y < yMin) {
+                y += currentYSize;
+            }
+            return y;
+        }
+        else if (y > yMax) {
+            while (y > yMax) {
+                y -= currentYSize;
+            }
+        }
+        return y;
+    }
+
+    /**
+     * @see #xInBounds(int)
+     */
+    public int zInBounds(int z) {
+        int currentZSize = zSize();
+        if (z < zMin) {
+            while (z < zMin) {
+                z += currentZSize;
+            }
+            return z;
+        }
+        else if (z > zMax) {
+            while (z > zMax) {
+                z -= currentZSize;
+            }
+        }
+        return z;
+    }
 
     public String getPrettyCoordinates() {
         return xMin + ' ' + yMin + ' ' + zMin + " -> " + xMax + ' ' + yMax + ' ' + zMax;

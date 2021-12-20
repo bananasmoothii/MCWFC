@@ -1,29 +1,52 @@
 package fr.bananasmoothii.mcwfc;
 
 import fr.bananasmoothii.mcwfc.util.Face;
-import fr.bananasmoothii.mcwfc.util.Pair;
 import fr.bananasmoothii.mcwfc.util.RotationAngle;
+import fr.bananasmoothii.mcwfc.util.Trio;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
 
 public class PieceNeighbors {
     private final @NotNull Piece centerPiece;
-    private final @NotNull List<Pair<Face, Piece>> neighbors = new ArrayList<>();
+    private final @NotNull List<Trio<Face, Piece, Integer>> neighbors = new ArrayList<>();
 
     public PieceNeighbors(@NotNull Piece centerPiece) {
-        this.centerPiece = centerPiece;
+        this.centerPiece = Objects.requireNonNull(centerPiece);
     }
 
+    /**  
+     * @param face the {@link Face} where the neighbor should be put
+     * @param piece the {@link Piece} to put there
+     * @see #addNeighbor(Face, Piece, int)
+     */
     public void addNeighbor(Face face, Piece piece) {
-        neighbors.add(new Pair<>(face, piece));
+        addNeighbor(face, piece, 1);
+    }
+
+    /**
+     * Adds a given piece as neighbor at a specific face. If there is already the same piece at the same face, it will
+     * just increment "times" by one (see below)
+     * @param face the {@link Face} where the neighbor should be put
+     * @param piece the {@link Piece} to put there
+     * @param times an optional weight, useful for generation. Defaults to 1 in {@link #addNeighbor(Face, Piece)}
+     * @see #addNeighbor(Face, Piece)
+     */
+    public void addNeighbor(Face face, Piece piece, int times) {
+        Objects.requireNonNull(face);
+        Objects.requireNonNull(piece);
+        for (int i = 0, neighborsSize = neighbors.size(); i < neighborsSize; i++) {
+            Trio<Face, Piece, Integer> neighbor = neighbors.get(i);
+            if (face.equals(neighbor.a()) && piece.equals(neighbor.b())) {
+                neighbors.set(i, new Trio<>(neighbor.a(), neighbor.b(), neighbor.c() + 1));
+                return;
+            }
+        }
+        neighbors.add(new Trio<>(face, piece, times));
     }
 
     public @NotNull Piece getCenterPiece() {
@@ -32,7 +55,7 @@ public class PieceNeighbors {
 
     public void fill(@NotNull BlockData blockData) {
         centerPiece.fill(blockData);
-        for (Pair<Face, Piece> neighbor : neighbors) {
+        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
             neighbor.b().fill(blockData);
         }
     }
@@ -76,7 +99,7 @@ public class PieceNeighbors {
     @Contract(pure = true)
     public @NotNull PieceNeighbors rotateX(@NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateX(angle));
-        for (Pair<Face, Piece> neighbor : neighbors) {
+        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
             copy.addNeighbor(neighbor.a().rotateX(angle), neighbor.b().rotateX(angle));
         }
         return copy;
@@ -84,7 +107,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors rotateY(@NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateY(angle));
-        for (Pair<Face, Piece> neighbor : neighbors) {
+        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
             copy.addNeighbor(neighbor.a().rotateY(angle), neighbor.b().rotateY(angle));
         }
         return copy;
@@ -92,7 +115,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors rotateZ(@NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateZ(angle));
-        for (Pair<Face, Piece> neighbor : neighbors) {
+        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
             copy.addNeighbor(neighbor.a().rotateZ(angle), neighbor.b().rotateZ(angle));
         }
         return copy;
@@ -100,7 +123,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors flipX() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipX());
-        for (Pair<Face, Piece> neighbor : neighbors) {
+        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
             copy.addNeighbor(neighbor.a().flipX(), neighbor.b().flipX());
         }
         return copy;
@@ -108,7 +131,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors flipY() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipY());
-        for (Pair<Face, Piece> neighbor : neighbors) {
+        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
             copy.addNeighbor(neighbor.a().flipY(), neighbor.b().flipY());
         }
         return copy;
@@ -116,7 +139,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors flipZ() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipZ());
-        for (Pair<Face, Piece> neighbor : neighbors) {
+        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
             copy.addNeighbor(neighbor.a().flipZ(), neighbor.b().flipZ());
         }
         return copy;

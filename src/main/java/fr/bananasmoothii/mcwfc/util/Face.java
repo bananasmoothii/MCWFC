@@ -225,7 +225,7 @@ public enum Face {
 
     /**
      * Returns true if this face is aligned with one of the unit axes in 3D
-     * Cartesian space (ie NORTH, SOUTH, EAST, WEST, UP, DOWN).
+     * Cartesian space (ie {@link #NORTH}, {@link #SOUTH}, {@link #EAST}, {@link #WEST}, {@link #TOP}, {@link #BOTTOM}).
      *
      * @return Cartesian status
      */
