@@ -5,7 +5,10 @@ import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
 
@@ -296,33 +299,5 @@ public class Piece {
             System.out.print('\n');
         }
         System.out.print('\n');
-    }
-
-    public static List<Piece> generatePieces(@NotNull VirtualSpace<Piece> space, int pieceSize) {
-        ArrayList result = new ArrayList<>();
-        return null;
-    }
-
-    /**
-     * @param fill the block to set when encountering a null value
-     * @return the piece of size pieceSize from x, y, z to x+pieceSize, y+pieceSize, z+pieceSize
-     */
-    public static @NotNull Piece getPieceAt(@NotNull VirtualSpace<BlockData> space, int x, int y, int z, int pieceSize,
-                                            @NotNull BlockData fill) {
-        Objects.requireNonNull(fill);
-        if (x < space.xMin() || y < space.yMin() || z < space.zMin() || x + pieceSize > space.xMax() ||
-                y + pieceSize > space.yMax() || z + pieceSize > space.zMax())
-            throw new IllegalArgumentException("invalid coordinates for piece: " + x + ' ' + y + ' ' + z +
-                    " in VirtualSpace of size " + space.getPrettyCoordinates());
-
-        Piece piece = new Piece(pieceSize, fill);
-        for (int ix = x; ix < x + pieceSize; ix++) {
-            for (int iy = y; iy < y + pieceSize; iy++) {
-                for (int iz = z; iz < z + pieceSize; iz++) {
-                    piece.set(space.getOrDefault(ix, iy, iz, fill), ix - x, iy - y, iz - z);
-                }
-            }
-        }
-        return piece;
     }
 }

@@ -8,54 +8,192 @@ import org.jetbrains.annotations.NotNull;
  * additions, removed of unnessery items and added UP and DOWN variants.
  */
 public enum Face {
-    NORTH(0, 0, -1),
-    EAST(1, 0, 0),
-    SOUTH(0, 0, 1),
-    WEST(-1, 0, 0),
-    UP(0, 1, 0),
-    DOWN(0, -1, 0),
-    NORTH_EAST(NORTH, EAST),
-    NORTH_WEST(NORTH, WEST),
-    SOUTH_EAST(SOUTH, EAST),
-    SOUTH_WEST(SOUTH, WEST),
-    NORTH_EAST_UP(NORTH_EAST, UP),
-    NORTH_EAST_DOWN(NORTH_EAST, DOWN),
-    NORTH_WEST_UP(NORTH_WEST, UP),
-    NORTH_WEST_DOWN(NORTH_WEST, DOWN),
-    SOUTH_EAST_UP(SOUTH_EAST, UP),
-    SOUTH_EAST_DOWN(SOUTH_EAST, DOWN),
-    SOUTH_WEST_UP(SOUTH_WEST, UP),
-    SOUTH_WEST_DOWN(SOUTH_WEST, DOWN),
-    NORTH_UP(NORTH, UP),
-    NORTH_DOWN(NORTH, DOWN),
-    EAST_UP(EAST, UP),
-    EAST_DOWN(EAST, DOWN),
-    SOUTH_UP(SOUTH, UP),
-    SOUTH_DOWN(SOUTH, DOWN),
-    WEST_UP(WEST, UP),
-    WEST_DOWN(WEST, DOWN);
+    NORTH(0, 0, -1),     // 0 0 -1
+    EAST(1, 0, 0),       // 1 0 0
+    SOUTH(0, 0, 1),      // 0 0 1
+    WEST(-1, 0, 0),      // -1 0 0
+    TOP(0, 1, 0),        // 0 1 0
+    BOTTOM(0, -1, 0),    // 0 -1 0
+    NORTH_EAST(NORTH, EAST),               // 1 0 -1
+    NORTH_WEST(NORTH, WEST),               // -1 0 -1
+    SOUTH_EAST(SOUTH, EAST),               // 1 0 1
+    SOUTH_WEST(SOUTH, WEST),               // -1 0 1
+    NORTH_EAST_TOP(NORTH_EAST, TOP),       // 1 1 -1
+    NORTH_EAST_BOTTOM(NORTH_EAST, BOTTOM), // 1 -1 -1
+    NORTH_WEST_TOP(NORTH_WEST, TOP),       // -1 1 -1
+    NORTH_WEST_BOTTOM(NORTH_WEST, BOTTOM), // -1 -1 -1
+    SOUTH_EAST_TOP(SOUTH_EAST, TOP),       // 1 1 1
+    SOUTH_EAST_BOTTOM(SOUTH_EAST, BOTTOM), // 1 -1 1
+    SOUTH_WEST_TOP(SOUTH_WEST, TOP),       // -1 1 1
+    SOUTH_WEST_BOTTOM(SOUTH_WEST, BOTTOM), // -1 -1 1
+    NORTH_TOP(NORTH, TOP),                 // 0 1 -1
+    NORTH_BOTTOM(NORTH, BOTTOM),           // 0 -1 -1
+    EAST_TOP(EAST, TOP),                   // 1 1 0
+    EAST_BOTTOM(EAST, BOTTOM),             // 1 -1 0
+    SOUTH_TOP(SOUTH, TOP),                 // 0 1 1
+    SOUTH_BOTTOM(SOUTH, BOTTOM),           // 0 -1 1
+    WEST_TOP(WEST, TOP),                   // -1 1 0
+    WEST_BOTTOM(WEST, BOTTOM);             // -1 -1 0
 
-    private final int modX;
-    private final int modY;
-    private final int modZ;
+    private final byte modX;
+    private final byte modY;
+    private final byte modZ;
 
-    Face(final int modX, final int modY, final int modZ) {
+    Face(final byte modX, final byte modY, final byte modZ) {
         this.modX = modX;
         this.modY = modY;
         this.modZ = modZ;
     }
 
+    Face(final int modX, final int modY, final int modZ) {
+        this((byte) modX, (byte) modY, (byte) modZ);
+    }
+
     Face(final @NotNull Face face1, final @NotNull Face face2) {
-        this.modX = face1.getModX() + face2.getModX();
-        this.modY = face1.getModY() + face2.getModY();
-        this.modZ = face1.getModZ() + face2.getModZ();
+        this.modX = (byte) (face1.getModX() + face2.getModX());
+        this.modY = (byte) (face1.getModY() + face2.getModY());
+        this.modZ = (byte) (face1.getModZ() + face2.getModZ());
     }
 
     public static @NotNull Face getWithMods(final int modX, final int modY, final int modZ) {
+        /*
         for (Face face : Face.values()) {
             if (face.modX == modX && face.modY == modY && face.modZ == modZ) return face;
         }
-        throw new IllegalArgumentException("Illegal block face: " + modX + ' ' + modY + ' ' + modZ);
+        */
+        // making some tiny optimisation here to avoid iterating over the hole list of enum constants each time
+        // I know it's huge, but it should be faster (not tested tho)
+        switch (modX) {
+            case -1 -> {
+                switch (modY) {
+                    case -1 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH_WEST_BOTTOM;
+                            }
+                            case 0 -> {
+                                return WEST_BOTTOM;
+                            }
+                            case 1 -> {
+                                return SOUTH_WEST_BOTTOM;
+                            }
+                        }
+                    }
+                    case 0 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH_WEST;
+                            }
+                            case 0 -> {
+                                return WEST;
+                            }
+                            case 1 -> {
+                                return  SOUTH_WEST;
+                            }
+                        }
+                    }
+                    case 1 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH_WEST_TOP;
+                            }
+                            case 0 -> {
+                                return WEST_TOP;
+                            }
+                            case 1 -> {
+                                return SOUTH_WEST_TOP;
+                            }
+                        }
+                    }
+                }
+            }
+            case 0 -> {
+                switch (modY) {
+                    case -1 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH_BOTTOM;
+                            }
+                            case 0 -> {
+                                return BOTTOM;
+                            }
+                            case 1 -> {
+                                return SOUTH_BOTTOM;
+                            }
+                        }
+                    }
+                    case 0 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH;
+                            }
+                            case 0 -> 
+                                    throw new IllegalArgumentException("Self is not allowed (face coordinates where 0 0 0)");
+                            case 1 -> {
+                                return SOUTH;
+                            }
+                        }
+                    }
+                    case 1 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH_TOP;
+                            }
+                            case 0 -> {
+                                return TOP;
+                            }
+                            case 1 -> {
+                                return SOUTH_TOP;
+                            }
+                        }
+                    }
+                }
+            }
+            case 1 -> {
+                switch (modY) {
+                    case -1 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH_EAST_BOTTOM;
+                            }
+                            case 0 -> {
+                                return EAST_BOTTOM;
+                            }
+                            case 1 -> {
+                                return SOUTH_EAST_BOTTOM;
+                            }
+                        }
+                    }
+                    case 0 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH_EAST;
+                            }
+                            case 0 -> {
+                                return EAST;
+                            }
+                            case 1 -> {
+                                return  SOUTH_EAST;
+                            }
+                        }
+                    }
+                    case 1 -> {
+                        switch (modZ) {
+                            case -1 -> {
+                                return NORTH_EAST_TOP;
+                            }
+                            case 0 -> {
+                                return EAST_TOP;
+                            }
+                            case 1 -> {
+                                return SOUTH_EAST_TOP;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        throw new IllegalArgumentException("Illegal block face coordinates: " + modX + ' ' + modY + ' ' + modZ);
     }
 
     /**
@@ -63,7 +201,7 @@ public enum Face {
      *
      * @return Amount of X-coordinates to modify
      */
-    public int getModX() {
+    public byte getModX() {
         return modX;
     }
 
@@ -72,7 +210,7 @@ public enum Face {
      *
      * @return Amount of Y-coordinates to modify
      */
-    public int getModY() {
+    public byte getModY() {
         return modY;
     }
 
@@ -81,7 +219,7 @@ public enum Face {
      *
      * @return Amount of Z-coordinates to modify
      */
-    public int getModZ() {
+    public byte getModZ() {
         return modZ;
     }
 
@@ -93,7 +231,7 @@ public enum Face {
      */
     public boolean isCartesian() {
         return switch (this) {
-            case NORTH, SOUTH, EAST, WEST, UP, DOWN -> true;
+            case NORTH, SOUTH, EAST, WEST, TOP, BOTTOM -> true;
             default -> false;
         };
     }

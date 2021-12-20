@@ -2,16 +2,21 @@ package fr.bananasmoothii.mcwfc;
 
 import fr.bananasmoothii.mcwfc.util.Face;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.Set;
 
 import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LittleTests {
 
     @Test
+    @Order(1)
     void virtualSpaceSet() {
         VirtualSpace<String> space = new VirtualSpace<>();
         space.set("a", 1, 0, 0);
@@ -28,6 +33,7 @@ class LittleTests {
     }
 
     @Test
+    @Order(2)
     void pieceRotation() {
         Piece piece1 = new Piece(2, 3, 1, BlockDataImpl.AIR);
         piece1.set(BlockDataImpl.STONE, 1, 2, 0);
@@ -50,6 +56,7 @@ class LittleTests {
     }
 
     @Test
+    @Order(3)
     void pieceFlip() {
         Piece piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
         piece.set(BlockDataImpl.STONE, 0, 0, 0);
@@ -58,14 +65,15 @@ class LittleTests {
     }
 
     @Test
+    @Order(4)
     void pieceSiblings() {
         Piece piece;
         Set<@NotNull Piece> pieces;
-        {
+        { // IDK why I did that way
             piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
             piece.set(BlockDataImpl.STONE, 0, 0, 0);
             piece.set(BlockDataImpl.STONE, 0, 1, 3);
-            piece.debugPrint();
+            //piece.debugPrint();
             pieces = piece.generateSiblings(true);
             assertEquals(48, pieces.size());
         }
@@ -77,12 +85,10 @@ class LittleTests {
     }
 
     @Test
+    @Order(5)
     void faceRotationFlip() {
-        for (Face face : Face.values()) {
-            System.out.println(face.name() + ": " + face.getModX() + ' ' + face.getModY() + ' ' + face.getModZ());
-        }
         Face face1 = Face.NORTH_WEST;
-        Face face2 = Face.DOWN;
+        Face face2 = Face.BOTTOM;
         assertEquals(face1, face1
                 .rotateX(D270)
                 .rotateY(D90)
@@ -101,5 +107,22 @@ class LittleTests {
                 .flipX().flipY().flipZ().flipX().flipY().flipZ());
         assertEquals(face2, face2
                 .flipX().flipY().flipZ().flipX().flipY().flipZ());
+    }
+
+    @Test
+    @Order(6)
+    void pieceNeighborsSiblings() {
+        PieceNeighbors piece;
+        Set<@NotNull PieceNeighbors> pieces;
+        PieceNeighbors piece0 = new PieceNeighbors(new Piece(2, 3, 4, BlockDataImpl.AIR));
+        piece0.getCenterPiece().set(BlockDataImpl.STONE, 0, 0, 0);
+        piece0.getCenterPiece().set(BlockDataImpl.STONE, 0, 1, 3);
+        piece0.addNeighbor(Face.TOP, piece0.getCenterPiece());
+        piece0.addNeighbor(Face.SOUTH_EAST_TOP, piece0.getCenterPiece());
+
+        piece = piece0.copy();
+        pieces = piece.generateSiblings(true);
+        assertEquals(48, pieces.size());
+        assertEquals(8, piece.generateSiblings(false).size());
     }
 }
