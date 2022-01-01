@@ -21,7 +21,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
 
     /*
         The internal working is: when you set or get something at certains coordinates, the coordinates you give are
-        offset by x, y and zOffset. x, y and zMin/Max are to determine when the arrays needs to be copied in larger arrays.
+        offset by x, y and zOffset. x, y and zMin/Max are to determine when the arrays need to be copied in larger arrays.
         It does not mean the array will be copied in a larger one, it just means it will call enlarge... methods. Then,
         the enlarge... methods will maybe copy the array(s) in larger ones, or do nothing apart saying "hey, you don't
         need to call me for this index", and this means raising ...Max fields or lowering ...Min fields.
@@ -275,6 +275,41 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      */
     public int getEnlargeAtOnce() {
         return enlargeAtOnce;
+    }
+
+    /**
+     * Creates and returns a selection from one point to another. The selection may be larger than the original.
+     */
+    @Contract(pure = true)
+    public VirtualSpace<T> select(int xFrom, int yFrom, int zFrom, int xTo, int yTo, int zTo) {
+        if (xFrom > xTo) {
+            int swapper = xFrom;
+            xFrom = xTo;
+            xTo = swapper;
+        }
+        if (yFrom > yTo) {
+            int swapper = yFrom;
+            yFrom = yTo;
+            yTo = swapper;
+        }
+        if (zFrom > zTo) {
+            int swapper = zFrom;
+            zFrom = zTo;
+            zTo = swapper;
+        }
+        VirtualSpace<T> result = new VirtualSpace<>();
+        result.setFill(getFill());
+        for (int xi = xFrom; xi <= xTo; xi++) {
+            for (int yi = yFrom; yi <= yTo; yi++) {
+                for (int zi = zFrom; zi <= zTo; zi++) {
+                    final T element = getWithoutFill(xi, yi, zi);
+                    if (element != null) {
+                        result.set(element, xi, yi, zi);
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**

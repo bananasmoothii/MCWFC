@@ -38,7 +38,7 @@ class LittleTests {
     @Test
     @Order(2)
     void pieceRotation() {
-        Piece piece1 = new Piece(2, 3, 1, BlockDataImpl.AIR);
+        Piece piece1 = new Piece(2, 3, 1, AIR);
         piece1.set(STONE, 1, 2, 0);
         piece1.set(STONE, 0, 1, 0);
         Piece piece2 = piece1.rotateZ(D270);
@@ -46,7 +46,7 @@ class LittleTests {
         assertEquals(piece1, piece2.rotateZ(D90));
         assertEquals(piece2.rotateZ(D270), piece1.rotateZ(D180));
 
-        Piece piece3 = new Piece(2, 3, 4, BlockDataImpl.AIR);
+        Piece piece3 = new Piece(2, 3, 4, AIR);
         piece3.set(STONE, 0, 0, 0);
         assertEquals(
                 piece3,
@@ -61,7 +61,7 @@ class LittleTests {
     @Test
     @Order(3)
     void pieceFlip() {
-        Piece piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
+        Piece piece = new Piece(2, 3, 4, AIR);
         piece.set(STONE, 0, 0, 0);
         assertEquals(piece,
                 piece.flipX().flipY().flipZ().flipX().flipY().flipZ());
@@ -73,7 +73,7 @@ class LittleTests {
         Piece piece;
         Set<@NotNull Piece> pieces;
         { // IDK why I did that way
-            piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
+            piece = new Piece(2, 3, 4, AIR);
             piece.set(STONE, 0, 0, 0);
             piece.set(STONE, 0, 1, 3);
             //piece.debugPrint();
@@ -81,7 +81,7 @@ class LittleTests {
             assertEquals(48, pieces.size());
         }
         {
-            piece = new Piece(3, 3, 3, BlockDataImpl.AIR);
+            piece = new Piece(3, 3, 3, AIR);
             pieces = piece.generateSiblings(true);
             assertEquals(1, pieces.size());
         }
@@ -117,7 +117,7 @@ class LittleTests {
     void pieceNeighborsSiblings() {
         PieceNeighbors piece;
         Set<@NotNull PieceNeighbors> pieces;
-        PieceNeighbors piece0 = new PieceNeighbors(new Piece(2, 3, 4, BlockDataImpl.AIR));
+        PieceNeighbors piece0 = new PieceNeighbors(new Piece(2, 3, 4, AIR));
         piece0.getCenterPiece().set(STONE, 0, 0, 0);
         piece0.getCenterPiece().set(STONE, 0, 1, 3);
         piece0.addNeighbor(Face.TOP, piece0.getCenterPiece());
@@ -132,7 +132,7 @@ class LittleTests {
     @Test
     @Order(7)
     void generatePieces() {
-        MCVirtualSpace space = new MCVirtualSpace();
+        MCVirtualSpace space = new MCVirtualSpace(AIR);
         space.setFill(AIR);
         // define the real sample size
         space.ensureCapacityForElement(-1, -1, 0); // min point
