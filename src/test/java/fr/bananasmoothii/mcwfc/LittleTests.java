@@ -1,6 +1,7 @@
 package fr.bananasmoothii.mcwfc;
 
 import fr.bananasmoothii.mcwfc.util.Face;
+import fr.bananasmoothii.mcwfc.util.MCVirtualSpace;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -9,6 +10,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.Set;
 
+import static fr.bananasmoothii.mcwfc.BlockDataImpl.AIR;
+import static fr.bananasmoothii.mcwfc.BlockDataImpl.STONE;
 import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,15 +39,15 @@ class LittleTests {
     @Order(2)
     void pieceRotation() {
         Piece piece1 = new Piece(2, 3, 1, BlockDataImpl.AIR);
-        piece1.set(BlockDataImpl.STONE, 1, 2, 0);
-        piece1.set(BlockDataImpl.STONE, 0, 1, 0);
+        piece1.set(STONE, 1, 2, 0);
+        piece1.set(STONE, 0, 1, 0);
         Piece piece2 = piece1.rotateZ(D270);
-        assertEquals(BlockDataImpl.STONE, piece2.get(2, 0, 0));
+        assertEquals(STONE, piece2.get(2, 0, 0));
         assertEquals(piece1, piece2.rotateZ(D90));
         assertEquals(piece2.rotateZ(D270), piece1.rotateZ(D180));
 
         Piece piece3 = new Piece(2, 3, 4, BlockDataImpl.AIR);
-        piece3.set(BlockDataImpl.STONE, 0, 0, 0);
+        piece3.set(STONE, 0, 0, 0);
         assertEquals(
                 piece3,
                 piece3  .rotateX(D270)
@@ -59,7 +62,7 @@ class LittleTests {
     @Order(3)
     void pieceFlip() {
         Piece piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
-        piece.set(BlockDataImpl.STONE, 0, 0, 0);
+        piece.set(STONE, 0, 0, 0);
         assertEquals(piece,
                 piece.flipX().flipY().flipZ().flipX().flipY().flipZ());
     }
@@ -71,8 +74,8 @@ class LittleTests {
         Set<@NotNull Piece> pieces;
         { // IDK why I did that way
             piece = new Piece(2, 3, 4, BlockDataImpl.AIR);
-            piece.set(BlockDataImpl.STONE, 0, 0, 0);
-            piece.set(BlockDataImpl.STONE, 0, 1, 3);
+            piece.set(STONE, 0, 0, 0);
+            piece.set(STONE, 0, 1, 3);
             //piece.debugPrint();
             pieces = piece.generateSiblings(true);
             assertEquals(48, pieces.size());
@@ -115,8 +118,8 @@ class LittleTests {
         PieceNeighbors piece;
         Set<@NotNull PieceNeighbors> pieces;
         PieceNeighbors piece0 = new PieceNeighbors(new Piece(2, 3, 4, BlockDataImpl.AIR));
-        piece0.getCenterPiece().set(BlockDataImpl.STONE, 0, 0, 0);
-        piece0.getCenterPiece().set(BlockDataImpl.STONE, 0, 1, 3);
+        piece0.getCenterPiece().set(STONE, 0, 0, 0);
+        piece0.getCenterPiece().set(STONE, 0, 1, 3);
         piece0.addNeighbor(Face.TOP, piece0.getCenterPiece());
         piece0.addNeighbor(Face.SOUTH_EAST_TOP, piece0.getCenterPiece());
 
@@ -124,5 +127,24 @@ class LittleTests {
         pieces = piece.generateSiblings(true);
         assertEquals(48, pieces.size());
         assertEquals(8, piece.generateSiblings(false).size());
+    }
+
+    @Test
+    @Order(7)
+    void generatePieces() {
+        MCVirtualSpace space = new MCVirtualSpace();
+        space.setFill(AIR);
+        // define the real sample size
+        space.ensureCapacityForElement(-1, -1, 0); // min point
+        space.ensureCapacityForElement(1, 2, 5);   // max point
+        space.set(STONE, 0, 0, 0);
+        space.set(STONE, 0, 0, 1);
+        space.set(STONE, 0, 0, 2);
+        space.set(STONE, 0, 0, 3); // that sample is too small but it doesn't matter
+        space.set(STONE, 0, 1, 3);
+        space.set(STONE, 0, -1, 3);
+        space.set(STONE, 0, 0, 4);
+        space.set(STONE, 0, 0, 5);
+        System.out.println(space.generatePieces(2, true));
     }
 }

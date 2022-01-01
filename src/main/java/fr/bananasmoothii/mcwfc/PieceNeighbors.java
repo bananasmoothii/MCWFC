@@ -163,4 +163,9 @@ public class PieceNeighbors {
         result = 31 * result + neighbors.hashCode();
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "";
+    }
 }

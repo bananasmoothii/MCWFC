@@ -27,6 +27,8 @@ public class Piece {
     }
 
     protected Piece(int xSize, int ySize, int zSize) {
+        if (xSize < 1 || ySize < 1 || zSize < 1)
+            throw new IllegalArgumentException("Piece size can't be below 1");
         data = new BlockData[xSize][ySize][zSize];
         this.xSize = xSize;
         this.ySize = ySize;

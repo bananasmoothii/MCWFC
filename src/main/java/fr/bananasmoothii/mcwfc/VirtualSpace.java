@@ -98,7 +98,17 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     }
 
     public @Nullable T get(int x, int y, int z) {
-        return replaceNullByFill(getWithoutFill(x, y, z));
+        final T withoutFill = getWithoutFill(x, y, z);
+        return withoutFill != null ? withoutFill : fill;
+    }
+
+    /**
+     * same as {@link #get(int, int, int)} but using always in-bounds coordinates.
+     * @see #xInBounds(int)
+     */
+    public @Nullable T getModuloCoords(int x, int y, int z) {
+        final T withoutFill = getWithoutFillModuloCoords(x, y, z);
+        return withoutFill != null ? withoutFill : fill;
     }
 
     /**
@@ -107,6 +117,16 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      */
     public @NotNull T getOrDefault(int x, int y, int z, @NotNull T defaultValue) {
         T value = get(x, y, z);
+        if (value == null) return defaultValue;
+        return value;
+    }
+
+    /**
+     * Same as {@link #get(int, int, int)} but if the result is still {@code null} even with the
+     * {@link #setFill(Object) fill}, it will return the provided defaultValue.
+     */
+    public @NotNull T getOrDefaultModuloCoords(int x, int y, int z, @NotNull T defaultValue) {
+        T value = getModuloCoords(x, y, z);
         if (value == null) return defaultValue;
         return value;
     }
@@ -121,6 +141,14 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
         } catch (IndexOutOfBoundsException e) {
             return null;
         }
+    }
+
+    /**
+     * same as {@link #getWithoutFill(int, int, int)} but using always in-bounds coordinates.
+     * @see #xInBounds(int)
+     */
+    public @Nullable T getWithoutFillModuloCoords(int x, int y, int z) {
+        return data[xInBounds(x) + xOffset][yInBounds(y) + yOffset][zInBounds(z) + zOffset];
     }
 
     public void set(@Nullable T object, int x, int y, int z) {
@@ -232,10 +260,6 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
             }
             zMax += addingSpace;
         }
-    }
-
-    public T replaceNullByFill(@Nullable T element) {
-        return element == null ? fill : element;
     }
 
     /**
@@ -377,15 +401,15 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     }
     
     public int xSize() {
-        return Math.abs(xMin) + Math.abs(xMax);
+        return Math.abs(xMin) + Math.abs(xMax) + 1;
     }
     
     public int ySize() {
-        return Math.abs(yMin) + Math.abs(yMax);
+        return Math.abs(yMin) + Math.abs(yMax) + 1;
     }
     
     public int zSize() {
-        return Math.abs(zMin) + Math.abs(zMax);
+        return Math.abs(zMin) + Math.abs(zMax) + 1;
     }
 
     /**
