@@ -14,7 +14,7 @@ public record Bounds(int xMin, int yMin, int zMin, int xMax, int yMax, int zMax)
     }
 
     @Contract(value = "_, _, _, _, _, _ -> new", pure = true)
-    public @NotNull Bounds fromTo(int x1, int y1, int z1, int x2, int y2, int z2) {
+    public static @NotNull Bounds fromTo(int x1, int y1, int z1, int x2, int y2, int z2) {
         if (x1 > x2) {
             int temp = x1;
             x1 = x2;

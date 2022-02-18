@@ -1,5 +1,6 @@
 package fr.bananasmoothii.mcwfc.core;
 
+import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Coords;
 import fr.bananasmoothii.mcwfc.core.util.Face;
 import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
@@ -31,6 +32,11 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
 
     public MCVirtualSpace(int xSize, int ySize, int zSize, @NotNull BlockData fill) {
         super(xSize, ySize, zSize);
+        setFill(fill);
+    }
+
+    public MCVirtualSpace(@NotNull Bounds bounds, @NotNull BlockData fill) {
+        super(bounds);
         setFill(fill);
     }
 

@@ -36,6 +36,15 @@ class LittleTests {
                 }
             }
         }
+        space = new VirtualSpace<>(new Bounds(4000, 100, -4010, 4010, 110, -4000));
+        space.set("a", 4005, 105, -4005);
+        assertEquals(4000, space.xMin());
+        assertEquals(100, space.yMin());
+        assertEquals(-4010, space.zMin());
+        assertEquals(4010, space.xMax());
+        assertEquals(110, space.yMax());
+        assertEquals(-4000, space.zMax());
+        assertEquals("a", space.get(4005, 105, -4005));
     }
 
     @Test
@@ -138,7 +147,7 @@ class LittleTests {
         MCVirtualSpace space = new MCVirtualSpace(AIR);
         space.ensureCapacityForElement(-7, -7, -7);
         space.ensureCapacityForElement(7, 7, 7);
-        for (int x = -15; x <= 15; x++) {
+        for (int x = -8; x <= 8; x++) {
             int xInBounds = space.xInBounds(x);
             assertTrue(space.xMin() <= xInBounds && xInBounds <= space.xMax());
         }
@@ -174,6 +183,6 @@ class LittleTests {
     void generateWorld() {
         if (pieceSet == null) generatePieces();
         GeneratingWorld world = new GeneratingWorld(pieceSet);
-        world.generateWFC(new Bounds(-15, -15, -15, 15, 15, 15));
+        world.generateWFC(new Bounds(-8, -8, -8, 8, 8, 8));
     }
 }

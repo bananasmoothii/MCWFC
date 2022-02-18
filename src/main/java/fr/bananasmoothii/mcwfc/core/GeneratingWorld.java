@@ -33,9 +33,8 @@ public class GeneratingWorld {
     }
 
     // da big ting here
-
     /**
-     * Generate
+     * Generate this world in the given bounds with the given pieces according to the Wave Function Collapse algorithm.
      */
     public void generateWFC(final @NotNull Bounds bounds) {
         if (availablePieces == null)
@@ -61,6 +60,7 @@ public class GeneratingWorld {
         // generate the first piece at that starting point
         final PieceNeighbors pieceChoice = availablePieces.weightedChoose(globalRandom);
         world.set(pieceChoice.getCenterPiece(), x, y, z);
+        pieceChanged(x, y, z, pieceChoice.getCenterPiece());
         HashMap<Coords, PieceGeneratingTask> tasks = new HashMap<>();
         HashMap<Coords, PieceGeneratingTask> newTasks = new HashMap<>();
         tasks.put(new Coords(x, y, z), new PieceGeneratingTask(x, y, z, pieceChoice, bounds));
@@ -161,6 +161,7 @@ public class GeneratingWorld {
                     // generate the piece
                     final Piece chosenPiece = faceEntry.getValue().weightedChoose(newRandom);
                     world.set(chosenPiece, newX, newY, newZ);
+                    pieceChanged(newX, newY, newZ, chosenPiece);
 
                     @SuppressWarnings("ConstantConditions")
                     PieceNeighbors[] weightedPieces = availablePieces.toArray(new PieceNeighbors[0]);
@@ -210,5 +211,26 @@ public class GeneratingWorld {
     public void setAvailablePieces(@NotNull WeightedSet<PieceNeighbors> availablePieces) {
         this.availablePieces = Objects.requireNonNull(availablePieces);
         pieceSize = availablePieces.getAny().getCenterPiece().xSize; // assuming the piece is cubic
+    }
+
+    private ArrayList<UpdateListener> listeners = new ArrayList<>();
+
+    public void onPieceChangeEvent(UpdateListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removePieceChangeListener(UpdateListener listener) {
+        listeners.remove(listener);
+    }
+
+    private void pieceChanged(int x, int y, int z, Piece piece) {
+        for (UpdateListener listener : listeners) {
+            listener.onChange(x, y, z, piece);
+        }
+    }
+
+    @FunctionalInterface
+    public interface UpdateListener {
+         void onChange(int pieceX, int pieceY, int pieceZ, Piece piece);
     }
 }

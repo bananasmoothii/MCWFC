@@ -82,6 +82,30 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     }
 
     /**
+     * New instance where {@link #xMin()} == {@link Bounds#xMin()}, {@link #zMax()} == {@link Bounds#zMax()}, etc.
+     */
+    public VirtualSpace(@NotNull Bounds bounds) {
+        xMin = bounds.xMin();
+        yMin = bounds.yMin();
+        zMin = bounds.zMin();
+
+        xMax = bounds.xMax();
+        yMax = bounds.yMax();
+        zMax = bounds.zMax();
+
+        xArraySize = xMax - xMin + 1;
+        yArraySize = yMax - yMin + 1;
+        zArraySize = zMax - zMin + 1;
+
+        //noinspection unchecked
+        data = (T[][][]) new Object[xArraySize][yArraySize][zArraySize];
+
+        xOffset = -xMin;
+        yOffset = -yMin;
+        zOffset = -zMin;
+    }
+
+    /**
      * Replaces all null values by this. Note that this is more visual: the arrays won't change, but instead of returning
      * null, it will now return what you give in here. This means that if you set {@code null} at a certain coordinate
      * and get the element at the same coordinates, you won't get {@code null}, but {@code fill} (the argument you
