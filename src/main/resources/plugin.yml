@@ -1,6 +1,6 @@
 name: MCWFC
 version: '${project.version}'
-main: fr.bananasmoothii.mcwfc.MCWFCPlugin
+main: fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin
 api-version: 1.17
 prefix: MCWFC
 depend: [ FastAsyncWorldEdit ]

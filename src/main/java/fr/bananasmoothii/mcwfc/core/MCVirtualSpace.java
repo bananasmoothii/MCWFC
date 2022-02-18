@@ -1,8 +1,8 @@
-package fr.bananasmoothii.mcwfc;
+package fr.bananasmoothii.mcwfc.core;
 
-import fr.bananasmoothii.mcwfc.util.Coords;
-import fr.bananasmoothii.mcwfc.util.Face;
-import fr.bananasmoothii.mcwfc.util.WeightedSet;
+import fr.bananasmoothii.mcwfc.core.util.Coords;
+import fr.bananasmoothii.mcwfc.core.util.Face;
+import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 

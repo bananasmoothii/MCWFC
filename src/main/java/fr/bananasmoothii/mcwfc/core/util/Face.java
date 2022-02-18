@@ -1,4 +1,4 @@
-package fr.bananasmoothii.mcwfc.util;
+package fr.bananasmoothii.mcwfc.core.util;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;

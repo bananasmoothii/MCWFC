@@ -1,8 +1,9 @@
 package fr.bananasmoothii.mcwfc;
 
-import fr.bananasmoothii.mcwfc.util.Bounds;
-import fr.bananasmoothii.mcwfc.util.Face;
-import fr.bananasmoothii.mcwfc.util.WeightedSet;
+import fr.bananasmoothii.mcwfc.core.*;
+import fr.bananasmoothii.mcwfc.core.util.Bounds;
+import fr.bananasmoothii.mcwfc.core.util.Face;
+import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -13,7 +14,7 @@ import java.util.Set;
 
 import static fr.bananasmoothii.mcwfc.BlockDataImpl.AIR;
 import static fr.bananasmoothii.mcwfc.BlockDataImpl.STONE;
-import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
+import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -166,7 +167,7 @@ class LittleTests {
         System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
     }
 
-    private WeightedSet<PieceNeighbors> pieceSet;
+    private static WeightedSet<PieceNeighbors> pieceSet;
 
     @Test
     @Order(9)

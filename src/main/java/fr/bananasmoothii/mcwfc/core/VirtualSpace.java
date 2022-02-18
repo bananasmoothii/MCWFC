@@ -1,6 +1,6 @@
-package fr.bananasmoothii.mcwfc;
+package fr.bananasmoothii.mcwfc.core;
 
-import fr.bananasmoothii.mcwfc.util.Bounds;
+import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

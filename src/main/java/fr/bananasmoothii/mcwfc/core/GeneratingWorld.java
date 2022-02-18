@@ -1,9 +1,9 @@
-package fr.bananasmoothii.mcwfc;
+package fr.bananasmoothii.mcwfc.core;
 
-import fr.bananasmoothii.mcwfc.util.Bounds;
-import fr.bananasmoothii.mcwfc.util.Coords;
-import fr.bananasmoothii.mcwfc.util.Face;
-import fr.bananasmoothii.mcwfc.util.WeightedSet;
+import fr.bananasmoothii.mcwfc.core.util.Bounds;
+import fr.bananasmoothii.mcwfc.core.util.Coords;
+import fr.bananasmoothii.mcwfc.core.util.Face;
+import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +62,7 @@ public class GeneratingWorld {
         final PieceNeighbors pieceChoice = availablePieces.weightedChoose(globalRandom);
         world.set(pieceChoice.getCenterPiece(), x, y, z);
         HashMap<Coords, PieceGeneratingTask> tasks = new HashMap<>();
-        final HashMap<Coords, PieceGeneratingTask> newTasks = new HashMap<>();
+        HashMap<Coords, PieceGeneratingTask> newTasks = new HashMap<>();
         tasks.put(new Coords(x, y, z), new PieceGeneratingTask(x, y, z, pieceChoice, bounds));
         while (!tasks.isEmpty()) {
             for (PieceGeneratingTask task : tasks.values()) {
@@ -75,7 +75,7 @@ public class GeneratingWorld {
                 }
             }
             tasks = newTasks;
-            newTasks.clear();
+            newTasks = new HashMap<>();
         }
         /*
         final LinkedList<PieceGeneratingTask> tasks = new LinkedList<>();

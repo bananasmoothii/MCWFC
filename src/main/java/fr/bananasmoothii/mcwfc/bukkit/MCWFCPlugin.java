@@ -1,4 +1,4 @@
-package fr.bananasmoothii.mcwfc;
+package fr.bananasmoothii.mcwfc.bukkit;
 
 import org.bukkit.plugin.java.JavaPlugin;
 

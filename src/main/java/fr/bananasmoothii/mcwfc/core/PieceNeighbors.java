@@ -1,15 +1,15 @@
-package fr.bananasmoothii.mcwfc;
+package fr.bananasmoothii.mcwfc.core;
 
-import fr.bananasmoothii.mcwfc.util.Face;
-import fr.bananasmoothii.mcwfc.util.RotationAngle;
-import fr.bananasmoothii.mcwfc.util.WeightedSet;
+import fr.bananasmoothii.mcwfc.core.util.Face;
+import fr.bananasmoothii.mcwfc.core.util.RotationAngle;
+import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
+import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
 public class PieceNeighbors {
     private final @NotNull Piece centerPiece;

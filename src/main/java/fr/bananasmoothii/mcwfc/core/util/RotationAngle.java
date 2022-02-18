@@ -1,4 +1,4 @@
-package fr.bananasmoothii.mcwfc.util;
+package fr.bananasmoothii.mcwfc.core.util;
 
 /**
  * Represents various rotations in degrees
