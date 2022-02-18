@@ -2,7 +2,7 @@ package fr.bananasmoothii.mcwfc;
 
 import fr.bananasmoothii.mcwfc.util.Face;
 import fr.bananasmoothii.mcwfc.util.RotationAngle;
-import fr.bananasmoothii.mcwfc.util.Trio;
+import fr.bananasmoothii.mcwfc.util.WeightedSet;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +13,7 @@ import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
 
 public class PieceNeighbors {
     private final @NotNull Piece centerPiece;
-    private final @NotNull List<Trio<Face, Piece, Integer>> neighbors = new ArrayList<>();
+    private final @NotNull Map<Face, WeightedSet<Piece>> neighbors = new HashMap<>();
 
     public PieceNeighbors(@NotNull Piece centerPiece) {
         this.centerPiece = Objects.requireNonNull(centerPiece);
@@ -30,23 +30,27 @@ public class PieceNeighbors {
 
     /**
      * Adds a given piece as neighbor at a specific face. If there is already the same piece at the same face, it will
-     * just increment "times" by one (see below)
+     * just increment "times" by one (see below). If there is already a piece at that face, it won't be replaced (that's
+     * the hole point of this class), both pieces will remain present.
      * @param face the {@link Face} where the neighbor should be put
      * @param piece the {@link Piece} to put there
-     * @param times an optional weight, useful for generation. Defaults to 1 in {@link #addNeighbor(Face, Piece)}
+     * @param times an optional weight, useful for generation. Defaults to 1 in {@link #addNeighbor(Face, Piece)}. Must
+     *              be greater or equal to 1.
      * @see #addNeighbor(Face, Piece)
      */
     public void addNeighbor(Face face, Piece piece, int times) {
         Objects.requireNonNull(face);
         Objects.requireNonNull(piece);
-        for (int i = 0, neighborsSize = neighbors.size(); i < neighborsSize; i++) {
-            Trio<Face, Piece, Integer> neighbor = neighbors.get(i);
-            if (face.equals(neighbor.a()) && piece.equals(neighbor.b())) {
-                neighbors.set(i, new Trio<>(neighbor.a(), neighbor.b(), neighbor.c() + 1));
-                return;
-            }
-        }
-        neighbors.add(new Trio<>(face, piece, times));
+        if (times < 1) throw new IllegalArgumentException("Cannot add 0 or less times a piece");
+
+        neighbors.computeIfAbsent(face, face1 -> new WeightedSet<>()) // create a new record for that face if not present
+                .add(piece, times);
+    }
+
+    public void addAllNeighbors(Face face, @NotNull WeightedSet<Piece> pieces) {
+        if (pieces.containsNonNormalWeights()) throw new IllegalArgumentException("Cannot add 0 or less times a piece");
+        neighbors.computeIfAbsent(Objects.requireNonNull(face), face1 -> new WeightedSet<>())
+                .addAll(pieces);
     }
 
     public @NotNull Piece getCenterPiece() {
@@ -55,14 +59,32 @@ public class PieceNeighbors {
 
     public void fill(@NotNull BlockData blockData) {
         centerPiece.fill(blockData);
-        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
-            neighbor.b().fill(blockData);
+        for (WeightedSet<Piece> pieceWeight : neighbors.values()) {
+            for (Piece piece : pieceWeight) {
+                piece.fill(blockData);
+            }
         }
+    }
+
+    /**
+     * @return The map used internally itself, that you may modify. Be careful with it. Integer is number of times that
+     * piece was recorded for that Face.
+     */
+    public @NotNull Map<Face, WeightedSet<Piece>> getNeighbors() {
+        return neighbors;
+    }
+
+    /**
+     * @return a map with the pieces and the corresponding weights. It is the same as used internally, so be careful with
+     * it.
+     */
+    public @NotNull WeightedSet<Piece> getNeighbors(@NotNull Face face) {
+        return neighbors.get(face);
     }
 
     public PieceNeighbors copy() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.copy());
-        copy.neighbors.addAll(neighbors);
+        copy.neighbors.putAll(neighbors);
         return copy;
     }
 
@@ -97,50 +119,50 @@ public class PieceNeighbors {
      * @return a rotated version by <i>angle</i> degrees along the Y axis
      */
     @Contract(pure = true)
-    public @NotNull PieceNeighbors rotateX(@NotNull RotationAngle angle) {
+    public @NotNull PieceNeighbors rotateX(final @NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateX(angle));
-        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
-            copy.addNeighbor(neighbor.a().rotateX(angle), neighbor.b().rotateX(angle));
+        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+            copy.neighbors.put(entry.getKey().rotateX(angle), entry.getValue().mapElements(piece -> piece.rotateX(angle)));
         }
         return copy;
     }
 
-    public @NotNull PieceNeighbors rotateY(@NotNull RotationAngle angle) {
+    public @NotNull PieceNeighbors rotateY(final @NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateY(angle));
-        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
-            copy.addNeighbor(neighbor.a().rotateY(angle), neighbor.b().rotateY(angle));
+        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+            copy.neighbors.put(entry.getKey().rotateY(angle), entry.getValue().mapElements(piece -> piece.rotateY(angle)));
         }
         return copy;
     }
 
-    public @NotNull PieceNeighbors rotateZ(@NotNull RotationAngle angle) {
+    public @NotNull PieceNeighbors rotateZ(final @NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateZ(angle));
-        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
-            copy.addNeighbor(neighbor.a().rotateZ(angle), neighbor.b().rotateZ(angle));
+        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+            copy.neighbors.put(entry.getKey().rotateZ(angle), entry.getValue().mapElements(piece -> piece.rotateZ(angle)));
         }
         return copy;
     }
 
     public @NotNull PieceNeighbors flipX() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipX());
-        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
-            copy.addNeighbor(neighbor.a().flipX(), neighbor.b().flipX());
+        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+            copy.neighbors.put(entry.getKey().flipX(), entry.getValue().mapElements(Piece::flipX));
         }
         return copy;
     }
 
     public @NotNull PieceNeighbors flipY() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipY());
-        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
-            copy.addNeighbor(neighbor.a().flipY(), neighbor.b().flipY());
+        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+            copy.neighbors.put(entry.getKey().flipY(), entry.getValue().mapElements(Piece::flipY));
         }
         return copy;
     }
 
     public @NotNull PieceNeighbors flipZ() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipZ());
-        for (Trio<Face, Piece, Integer> neighbor : neighbors) {
-            copy.addNeighbor(neighbor.a().flipZ(), neighbor.b().flipZ());
+        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+            copy.neighbors.put(entry.getKey().flipZ(), entry.getValue().mapElements(Piece::flipZ));
         }
         return copy;
     }
@@ -162,10 +184,5 @@ public class PieceNeighbors {
         int result = centerPiece.hashCode();
         result = 31 * result + neighbors.hashCode();
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return "";
     }
 }

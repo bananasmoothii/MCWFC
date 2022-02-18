@@ -1,7 +1,8 @@
 package fr.bananasmoothii.mcwfc;
 
+import fr.bananasmoothii.mcwfc.util.Bounds;
 import fr.bananasmoothii.mcwfc.util.Face;
-import fr.bananasmoothii.mcwfc.util.MCVirtualSpace;
+import fr.bananasmoothii.mcwfc.util.WeightedSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -14,6 +15,7 @@ import static fr.bananasmoothii.mcwfc.BlockDataImpl.AIR;
 import static fr.bananasmoothii.mcwfc.BlockDataImpl.STONE;
 import static fr.bananasmoothii.mcwfc.util.RotationAngle.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LittleTests {
@@ -131,6 +133,21 @@ class LittleTests {
 
     @Test
     @Order(7)
+    void coordsAreInBounds() {
+        MCVirtualSpace space = new MCVirtualSpace(AIR);
+        space.ensureCapacityForElement(-7, -7, -7);
+        space.ensureCapacityForElement(7, 7, 7);
+        for (int x = -15; x <= 15; x++) {
+            int xInBounds = space.xInBounds(x);
+            assertTrue(space.xMin() <= xInBounds && xInBounds <= space.xMax());
+        }
+        space = new MCVirtualSpace(AIR);
+        space.set(STONE, -4, 3, 8);
+        assertEquals(STONE, space.getModuloCoords(1, -1, 26)); // 26 % 9 = 8
+    }
+
+    @Test
+    @Order(8)
     void generatePieces() {
         MCVirtualSpace space = new MCVirtualSpace(AIR);
         space.setFill(AIR);
@@ -145,6 +162,17 @@ class LittleTests {
         space.set(STONE, 0, -1, 3);
         space.set(STONE, 0, 0, 4);
         space.set(STONE, 0, 0, 5);
-        System.out.println(space.generatePieces(2, true));
+        pieceSet = space.generatePieces(2, true);
+        System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
+    }
+
+    private WeightedSet<PieceNeighbors> pieceSet;
+
+    @Test
+    @Order(9)
+    void generateWorld() {
+        if (pieceSet == null) generatePieces();
+        GeneratingWorld world = new GeneratingWorld(pieceSet);
+        world.generateWFC(new Bounds(-15, -15, -15, 15, 15, 15));
     }
 }

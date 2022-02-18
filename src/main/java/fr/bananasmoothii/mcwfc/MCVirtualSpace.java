@@ -1,8 +1,8 @@
-package fr.bananasmoothii.mcwfc.util;
+package fr.bananasmoothii.mcwfc;
 
-import fr.bananasmoothii.mcwfc.Piece;
-import fr.bananasmoothii.mcwfc.PieceNeighbors;
-import fr.bananasmoothii.mcwfc.VirtualSpace;
+import fr.bananasmoothii.mcwfc.util.Coords;
+import fr.bananasmoothii.mcwfc.util.Face;
+import fr.bananasmoothii.mcwfc.util.WeightedSet;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,56 +37,46 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
     /**
      * Generates and reduces pieces along with their neighbors. This doesn't generate any edge or corner neighbors, only
      * cartesian faces as in {@link Face#isCartesian()}. This method doesn't allow putting pieces upside down.
-     * You may use this method only if a fill was set with {@link #setFill(BlockData)}.
      * @param pieceSize the size of each {@link Piece} in x, y and z directions
-     * @return a map with the {@link PieceNeighbors} as key and an integer representing the weight (or the number or time
-     * this {@link PieceNeighbors} was seen)
+     * @return a {@link WeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
      * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
-    public Map<PieceNeighbors, Integer> generatePieces(final int pieceSize) {
+    public WeightedSet<PieceNeighbors> generatePieces(final int pieceSize) {
         return generatePieces(pieceSize, false);
     }
 
     /**
      * Generates and reduces pieces along with their neighbors. This doesn't generate any edge or corner neighbors, only
      * cartesian faces as in {@link Face#isCartesian()}.
-     * You may use this method only if a fill was set with {@link #setFill(BlockData)}.
      * @param pieceSize the size of each {@link Piece} in x, y and z directions
      * @param allowUpsideDown whether to allow putting pieces sideways or upside down. If this is set to false, it will
      *                        only allow x and z flipping, and rotating along the y-axis.
-     * @return a map with the {@link PieceNeighbors} as key and an integer representing the weight (or the number or time
-     * this {@link PieceNeighbors} was seen)
+     * @return a {@link WeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
      * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
-    public Map<PieceNeighbors, Integer> generatePieces(final int pieceSize, final boolean allowUpsideDown) {
-        HashMap<PieceNeighbors, Integer> result = new HashMap<>();
+    public WeightedSet<PieceNeighbors> generatePieces(final int pieceSize, final boolean allowUpsideDown) {
+        WeightedSet<PieceNeighbors> result = new WeightedSet<>();
+        HashMap<Coords, Piece> piecesCache = new HashMap<>(); // used to keep the same reference for pieces with the exact same coords
         for (int x = xMin(); x <= xMax(); x++) {
             for (int y = yMin(); y < yMax(); y++) {
                 for (int z = zMin(); z < zMax(); z++) {
                     //System.out.println("Generating " + x + ' ' + y + ' ' + z);
-                    PieceNeighbors pieceNeighbors = new PieceNeighbors(getPieceAt(x, y, z, pieceSize, true));
-                    pieceNeighbors.addNeighbor(Face.TOP, getPieceAt(x, y + pieceSize, z, pieceSize, true));
-                    pieceNeighbors.addNeighbor(Face.BOTTOM, getPieceAt(x, y - pieceSize, z, pieceSize, true));
-                    pieceNeighbors.addNeighbor(Face.WEST, getPieceAt(x - pieceSize, y, z, pieceSize, true));
-                    pieceNeighbors.addNeighbor(Face.EAST, getPieceAt(x + pieceSize, y, z, pieceSize, true));
-                    pieceNeighbors.addNeighbor(Face.NORTH, getPieceAt(x, y, z - pieceSize, pieceSize, true));
-                    pieceNeighbors.addNeighbor(Face.SOUTH, getPieceAt(x, y, z + pieceSize, pieceSize, true));
+                    PieceNeighbors pieceNeighbors = new PieceNeighbors(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
+                    pieceNeighbors.addNeighbor(Face.TOP, getPieceAt(new Coords(x, y + pieceSize, z), pieceSize, true, piecesCache));
+                    pieceNeighbors.addNeighbor(Face.BOTTOM, getPieceAt(new Coords(x, y - pieceSize, z), pieceSize, true, piecesCache));
+                    pieceNeighbors.addNeighbor(Face.WEST, getPieceAt(new Coords(x - pieceSize, y, z), pieceSize, true, piecesCache));
+                    pieceNeighbors.addNeighbor(Face.EAST, getPieceAt(new Coords(x + pieceSize, y, z), pieceSize, true, piecesCache));
+                    pieceNeighbors.addNeighbor(Face.NORTH, getPieceAt(new Coords(x, y, z - pieceSize), pieceSize, true, piecesCache));
+                    pieceNeighbors.addNeighbor(Face.SOUTH, getPieceAt(new Coords(x, y, z + pieceSize), pieceSize, true, piecesCache));
                     for (PieceNeighbors sibling : pieceNeighbors.generateSiblings(allowUpsideDown)) {
                         // add 1 to the weight if that sibling already exists, else put it in the map with a weight of 1
-                        result.merge(sibling, 1, Integer::sum);
+                        result.add(sibling, 1);
                     }
                 }
             }
         }
         return result;
     }
-
-
-    // da big ting here
-    public void generateWFC(final MCVirtualSpace sample, final int pieceSize, final boolean allowUpsideDown) {
-        // TODO
-    }
-
 
     /**
      * You may use this method only if a fill was set with {@link #setFill(BlockData)}.
@@ -128,6 +118,16 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
             }
             return piece;
         }
+    }
+
+    /**
+     * Useful to keep same references for same pieces.
+     * @see #getPieceAt(int, int, int, int, boolean)
+     */
+    protected @NotNull Piece getPieceAt(final @NotNull Coords coords, final int pieceSize, final boolean useModuloCoords,
+                                        @NotNull Map<Coords, Piece> pieceCache) {
+        return pieceCache.computeIfAbsent(coords,
+                coords1 -> getPieceAt(coords1.x(), coords1.y(), coords1.z(), pieceSize, useModuloCoords));
     }
 
     @Override

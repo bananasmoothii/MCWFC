@@ -1,5 +1,6 @@
 package fr.bananasmoothii.mcwfc;
 
+import fr.bananasmoothii.mcwfc.util.Bounds;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -454,19 +455,16 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      * if you get too far away and cross one side, you will pop up at the opposite site.
      */
     public int xInBounds(int x) {
+        // maths: we have an integer k such as
+        //     xMin <= x+k*xSize <= xMax
+        // <=> (xMin-x)/xSize <= k <= (xMax-x)/xSize
+        //     we imply that there is a solution
+        // <=> k = Math.ceil((xMin-x)/xSize)
+        //  OR k = Math.floor((xMax-x)/xSize)
+        //  => xInBounds = x+k*xSize = x+Math.ceil((xMin-x)/xSize)*xSize
+        //                        OR = x+Math.floor((xMax-x)/xSize)*xSize
         int currentXSize = xSize();
-        if (x < xMin) {
-            while (x < xMin) {
-                x += currentXSize;
-            }
-            return x;
-        }
-        else if (x > xMax) {
-            while (x > xMax) {
-                x -= currentXSize;
-            }
-        }
-        return x;
+        return x + (int) Math.floor((double) (xMax - x) / currentXSize) * currentXSize;
     }
 
     /**
@@ -474,18 +472,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      */
     public int yInBounds(int y) {
         int currentYSize = ySize();
-        if (y < yMin) {
-            while (y < yMin) {
-                y += currentYSize;
-            }
-            return y;
-        }
-        else if (y > yMax) {
-            while (y > yMax) {
-                y -= currentYSize;
-            }
-        }
-        return y;
+        return y + (int) Math.floor((double) (yMax - y) / currentYSize) * currentYSize;
     }
 
     /**
@@ -493,22 +480,15 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      */
     public int zInBounds(int z) {
         int currentZSize = zSize();
-        if (z < zMin) {
-            while (z < zMin) {
-                z += currentZSize;
-            }
-            return z;
-        }
-        else if (z > zMax) {
-            while (z > zMax) {
-                z -= currentZSize;
-            }
-        }
-        return z;
+        return z + (int) Math.floor((double) (zMax - z) / currentZSize) * currentZSize;
     }
 
     public String getPrettyCoordinates() {
-        return xMin + ' ' + yMin + ' ' + zMin + " -> " + xMax + ' ' + yMax + ' ' + zMax;
+        return String.valueOf(xMin) + ' ' + yMin + ' ' + zMin + " -> " + xMax + ' ' + yMax + ' ' + zMax;
+    }
+
+    public Bounds getBounds() {
+        return new Bounds(xMin, yMin, zMin, xMax, yMax, zMax);
     }
 
     /**
