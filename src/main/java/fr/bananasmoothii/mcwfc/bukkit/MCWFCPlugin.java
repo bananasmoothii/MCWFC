@@ -12,7 +12,7 @@ public final class MCWFCPlugin extends JavaPlugin {
     public void onEnable() {
         inst = this;
         PaperCommandManager manager = new PaperCommandManager(this);
-
+        manager.registerCommand(new Commands());
     }
 
     @Override

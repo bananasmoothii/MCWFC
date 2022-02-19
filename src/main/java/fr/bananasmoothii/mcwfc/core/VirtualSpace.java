@@ -461,15 +461,15 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     }
     
     public int xSize() {
-        return Math.abs(xMin) + Math.abs(xMax) + 1;
+        return xMax - xMin + 1;
     }
     
     public int ySize() {
-        return Math.abs(yMin) + Math.abs(yMax) + 1;
+        return yMax - yMin + 1;
     }
     
     public int zSize() {
-        return Math.abs(zMin) + Math.abs(zMax) + 1;
+        return zMax - zMin + 1;
     }
 
     /**

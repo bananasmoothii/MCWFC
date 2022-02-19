@@ -1,8 +1,8 @@
 package fr.bananasmoothii.mcwfc.core;
 
 import fr.bananasmoothii.mcwfc.core.util.Face;
+import fr.bananasmoothii.mcwfc.core.util.HashWeightedSet;
 import fr.bananasmoothii.mcwfc.core.util.RotationAngle;
-import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +13,7 @@ import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
 public class PieceNeighbors {
     private final @NotNull Piece centerPiece;
-    private final @NotNull Map<Face, WeightedSet<Piece>> neighbors = new HashMap<>();
+    private final @NotNull Map<Face, HashWeightedSet<Piece>> neighbors = new HashMap<>();
 
     public PieceNeighbors(@NotNull Piece centerPiece) {
         this.centerPiece = Objects.requireNonNull(centerPiece);
@@ -43,14 +43,24 @@ public class PieceNeighbors {
         Objects.requireNonNull(piece);
         if (times < 1) throw new IllegalArgumentException("Cannot add 0 or less times a piece");
 
-        neighbors.computeIfAbsent(face, face1 -> new WeightedSet<>()) // create a new record for that face if not present
+        neighbors.computeIfAbsent(face, face1 -> new HashWeightedSet<>()) // create a new record for that face if not present
                 .add(piece, times);
     }
 
-    public void addAllNeighbors(Face face, @NotNull WeightedSet<Piece> pieces) {
+    public void addNeighborsOf(@NotNull PieceNeighbors other) {
+        for (Map.Entry<Face, HashWeightedSet<Piece>> faceEntry : other.neighbors.entrySet()) {
+            addAllNeighbors(faceEntry.getKey(), faceEntry.getValue());
+        }
+    }
+
+    public void addAllNeighbors(Face face, @NotNull HashWeightedSet<Piece> pieces) {
+        addAllNeighbors(face, pieces, 1);
+    }
+
+    public void addAllNeighbors(Face face, HashWeightedSet<Piece> pieces, int weight) {
         if (pieces.containsNonNormalWeights()) throw new IllegalArgumentException("Cannot add 0 or less times a piece");
-        neighbors.computeIfAbsent(Objects.requireNonNull(face), face1 -> new WeightedSet<>())
-                .addAll(pieces);
+        neighbors.computeIfAbsent(Objects.requireNonNull(face), face1 -> new HashWeightedSet<>())
+                .addAll(pieces, weight);
     }
 
     public @NotNull Piece getCenterPiece() {
@@ -59,7 +69,7 @@ public class PieceNeighbors {
 
     public void fill(@NotNull BlockData blockData) {
         centerPiece.fill(blockData);
-        for (WeightedSet<Piece> pieceWeight : neighbors.values()) {
+        for (HashWeightedSet<Piece> pieceWeight : neighbors.values()) {
             for (Piece piece : pieceWeight) {
                 piece.fill(blockData);
             }
@@ -70,7 +80,7 @@ public class PieceNeighbors {
      * @return The map used internally itself, that you may modify. Be careful with it. Integer is number of times that
      * piece was recorded for that Face.
      */
-    public @NotNull Map<Face, WeightedSet<Piece>> getNeighbors() {
+    public @NotNull Map<Face, HashWeightedSet<Piece>> getNeighbors() {
         return neighbors;
     }
 
@@ -78,13 +88,28 @@ public class PieceNeighbors {
      * @return a map with the pieces and the corresponding weights. It is the same as used internally, so be careful with
      * it.
      */
-    public @NotNull WeightedSet<Piece> getNeighbors(@NotNull Face face) {
+    public @NotNull HashWeightedSet<Piece> getNeighbors(@NotNull Face face) {
         return neighbors.get(face);
     }
 
+    /**
+     * This does not copy the pieces themselves !
+     */
     public PieceNeighbors copy() {
-        PieceNeighbors copy = new PieceNeighbors(centerPiece.copy());
+        PieceNeighbors copy = new PieceNeighbors(centerPiece);
         copy.neighbors.putAll(neighbors);
+        return copy;
+    }
+
+    /**
+     * Makes a copy of this, multiplies every weight by
+     */
+    public PieceNeighbors copyMultiplyWeights(int weight) {
+        if (weight == 1) return copy();
+        PieceNeighbors copy = new PieceNeighbors(centerPiece);
+        for (Map.Entry<Face, HashWeightedSet<Piece>> faceEntry : neighbors.entrySet()) {
+            copy.neighbors.put(faceEntry.getKey(), faceEntry.getValue().copyMultiplyWeights(weight));
+        }
         return copy;
     }
 
@@ -121,7 +146,7 @@ public class PieceNeighbors {
     @Contract(pure = true)
     public @NotNull PieceNeighbors rotateX(final @NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateX(angle));
-        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+        for (Map.Entry<Face, HashWeightedSet<Piece>> entry : neighbors.entrySet()) {
             copy.neighbors.put(entry.getKey().rotateX(angle), entry.getValue().mapElements(piece -> piece.rotateX(angle)));
         }
         return copy;
@@ -129,7 +154,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors rotateY(final @NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateY(angle));
-        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+        for (Map.Entry<Face, HashWeightedSet<Piece>> entry : neighbors.entrySet()) {
             copy.neighbors.put(entry.getKey().rotateY(angle), entry.getValue().mapElements(piece -> piece.rotateY(angle)));
         }
         return copy;
@@ -137,7 +162,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors rotateZ(final @NotNull RotationAngle angle) {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateZ(angle));
-        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+        for (Map.Entry<Face, HashWeightedSet<Piece>> entry : neighbors.entrySet()) {
             copy.neighbors.put(entry.getKey().rotateZ(angle), entry.getValue().mapElements(piece -> piece.rotateZ(angle)));
         }
         return copy;
@@ -145,7 +170,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors flipX() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipX());
-        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+        for (Map.Entry<Face, HashWeightedSet<Piece>> entry : neighbors.entrySet()) {
             copy.neighbors.put(entry.getKey().flipX(), entry.getValue().mapElements(Piece::flipX));
         }
         return copy;
@@ -153,7 +178,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors flipY() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipY());
-        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+        for (Map.Entry<Face, HashWeightedSet<Piece>> entry : neighbors.entrySet()) {
             copy.neighbors.put(entry.getKey().flipY(), entry.getValue().mapElements(Piece::flipY));
         }
         return copy;
@@ -161,7 +186,7 @@ public class PieceNeighbors {
 
     public @NotNull PieceNeighbors flipZ() {
         PieceNeighbors copy = new PieceNeighbors(centerPiece.flipZ());
-        for (Map.Entry<Face, WeightedSet<Piece>> entry : neighbors.entrySet()) {
+        for (Map.Entry<Face, HashWeightedSet<Piece>> entry : neighbors.entrySet()) {
             copy.neighbors.put(entry.getKey().flipZ(), entry.getValue().mapElements(Piece::flipZ));
         }
         return copy;

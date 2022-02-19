@@ -1,9 +1,6 @@
 package fr.bananasmoothii.mcwfc.core;
 
-import fr.bananasmoothii.mcwfc.core.util.Bounds;
-import fr.bananasmoothii.mcwfc.core.util.Coords;
-import fr.bananasmoothii.mcwfc.core.util.Face;
-import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
+import fr.bananasmoothii.mcwfc.core.util.*;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,10 +41,10 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      * Generates and reduces pieces along with their neighbors. This doesn't generate any edge or corner neighbors, only
      * cartesian faces as in {@link Face#isCartesian()}. This method doesn't allow putting pieces upside down.
      * @param pieceSize the size of each {@link Piece} in x, y and z directions
-     * @return a {@link WeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
+     * @return a {@link HashWeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
      * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
-    public WeightedSet<PieceNeighbors> generatePieces(final int pieceSize) {
+    public PieceNeighborsSet generatePieces(final int pieceSize) {
         return generatePieces(pieceSize, false);
     }
 
@@ -57,15 +54,15 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      * @param pieceSize the size of each {@link Piece} in x, y and z directions
      * @param allowUpsideDown whether to allow putting pieces sideways or upside down. If this is set to false, it will
      *                        only allow x and z flipping, and rotating along the y-axis.
-     * @return a {@link WeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
+     * @return a {@link HashWeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
      * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
-    public WeightedSet<PieceNeighbors> generatePieces(final int pieceSize, final boolean allowUpsideDown) {
-        WeightedSet<PieceNeighbors> result = new WeightedSet<>();
+    public PieceNeighborsSet generatePieces(final int pieceSize, final boolean allowUpsideDown) {
+        PieceNeighborsSet result = new PieceNeighborsSet();
         HashMap<Coords, Piece> piecesCache = new HashMap<>(); // used to keep the same reference for pieces with the exact same coords
         for (int x = xMin(); x <= xMax(); x++) {
-            for (int y = yMin(); y < yMax(); y++) {
-                for (int z = zMin(); z < zMax(); z++) {
+            for (int y = yMin(); y <= yMax(); y++) {
+                for (int z = zMin(); z <= zMax(); z++) {
                     //System.out.println("Generating " + x + ' ' + y + ' ' + z);
                     PieceNeighbors pieceNeighbors = new PieceNeighbors(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
                     pieceNeighbors.addNeighbor(Face.TOP, getPieceAt(new Coords(x, y + pieceSize, z), pieceSize, true, piecesCache));
@@ -74,10 +71,8 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
                     pieceNeighbors.addNeighbor(Face.EAST, getPieceAt(new Coords(x + pieceSize, y, z), pieceSize, true, piecesCache));
                     pieceNeighbors.addNeighbor(Face.NORTH, getPieceAt(new Coords(x, y, z - pieceSize), pieceSize, true, piecesCache));
                     pieceNeighbors.addNeighbor(Face.SOUTH, getPieceAt(new Coords(x, y, z + pieceSize), pieceSize, true, piecesCache));
-                    for (PieceNeighbors sibling : pieceNeighbors.generateSiblings(allowUpsideDown)) {
-                        // add 1 to the weight if that sibling already exists, else put it in the map with a weight of 1
-                        result.add(sibling, 1);
-                    }
+                    // add 1 to the weight if that sibling already exists, else put it in the map with a weight of 1
+                    result.addAll(pieceNeighbors.generateSiblings(allowUpsideDown));
                 }
             }
         }

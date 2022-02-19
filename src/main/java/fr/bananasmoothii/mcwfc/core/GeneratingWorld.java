@@ -1,9 +1,6 @@
 package fr.bananasmoothii.mcwfc.core;
 
-import fr.bananasmoothii.mcwfc.core.util.Bounds;
-import fr.bananasmoothii.mcwfc.core.util.Coords;
-import fr.bananasmoothii.mcwfc.core.util.Face;
-import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
+import fr.bananasmoothii.mcwfc.core.util.*;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,18 +11,18 @@ import java.util.concurrent.ThreadLocalRandom;
 public class GeneratingWorld {
     private final VirtualSpace<Piece> world;
     private final long seed;
-    private @Nullable WeightedSet<PieceNeighbors> availablePieces;
+    private @Nullable PieceNeighborsSet availablePieces;
     private int pieceSize;
 
     public GeneratingWorld() {
         this(null);
     }
 
-    public GeneratingWorld(final @Nullable WeightedSet<PieceNeighbors> availablePieces) {
+    public GeneratingWorld(final @Nullable PieceNeighborsSet availablePieces) {
         this(ThreadLocalRandom.current().nextLong(), availablePieces);
     }
 
-    public GeneratingWorld(final long seed, final @Nullable WeightedSet<PieceNeighbors> availablePieces) {
+    public GeneratingWorld(final long seed, final @Nullable PieceNeighborsSet availablePieces) {
         world = new VirtualSpace<>();
         this.seed = seed;
         if (availablePieces != null)
@@ -58,13 +55,13 @@ public class GeneratingWorld {
         int z = globalRandom.nextInt(pieceBounds.zMin(), pieceBounds.zMax() + 1);
 
         // generate the first piece at that starting point
-        final PieceNeighbors pieceChoice = availablePieces.weightedChoose(globalRandom);
+        final PieceNeighbors pieceChoice = availablePieces.chooseRandom(globalRandom);
         world.set(pieceChoice.getCenterPiece(), x, y, z);
         pieceChanged(x, y, z, pieceChoice.getCenterPiece());
         HashMap<Coords, PieceGeneratingTask> tasks = new HashMap<>();
         HashMap<Coords, PieceGeneratingTask> newTasks = new HashMap<>();
         tasks.put(new Coords(x, y, z), new PieceGeneratingTask(x, y, z, pieceChoice, bounds));
-        while (!tasks.isEmpty()) {
+        while (!tasks.isEmpty()) { // TODO: randomization in task choosing
             for (PieceGeneratingTask task : tasks.values()) {
                 for (PieceGeneratingTask newTask : task.generate()) {
                     final PieceGeneratingTask taskInMap = newTasks.get(newTask.getCoords());
@@ -139,7 +136,7 @@ public class GeneratingWorld {
         }
 
         public void addPieceNeighborsOption(@NotNull PieceNeighbors pieceNeighbors) {
-            for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : pieceNeighbors.getNeighbors().entrySet()) {
+            for (Map.Entry<Face, HashWeightedSet<Piece>> faceEntry : pieceNeighbors.getNeighbors().entrySet()) {
                 pieceNeighborsAtPosition.addAllNeighbors(faceEntry.getKey(), faceEntry.getValue());
             }
         }
@@ -150,7 +147,7 @@ public class GeneratingWorld {
 
         public List<PieceGeneratingTask> generate() {
             List<PieceGeneratingTask> newTasks = new ArrayList<>(pieceNeighborsAtPosition.getNeighbors().size());
-            for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : pieceNeighborsAtPosition.getNeighbors().entrySet()) {
+            for (Map.Entry<Face, HashWeightedSet<Piece>> faceEntry : pieceNeighborsAtPosition.getNeighbors().entrySet()) {
                 final Face face = faceEntry.getKey();
                 final int newX = x + face.getModX();
                 final int newY = y + face.getModY();
@@ -164,7 +161,7 @@ public class GeneratingWorld {
                     pieceChanged(newX, newY, newZ, chosenPiece);
 
                     @SuppressWarnings("ConstantConditions")
-                    PieceNeighbors[] weightedPieces = availablePieces.toArray(new PieceNeighbors[0]);
+                    PieceNeighbors[] weightedPieces = availablePieces.toArray();
                     shuffle(weightedPieces, newRandom);
                     boolean found = false;
                     for (final PieceNeighbors weightedPiece : weightedPieces) {
@@ -201,24 +198,27 @@ public class GeneratingWorld {
         return random;
     }
 
-    public @Nullable WeightedSet<PieceNeighbors> getAvailablePieces() {
+    public @Nullable PieceNeighborsSet getAvailablePieces() {
         return availablePieces;
     }
 
     /**
      * Even if you can set it to null, I don't know why someone would...
      */
-    public void setAvailablePieces(@NotNull WeightedSet<PieceNeighbors> availablePieces) {
+    public void setAvailablePieces(@NotNull PieceNeighborsSet availablePieces) {
         this.availablePieces = Objects.requireNonNull(availablePieces);
         pieceSize = availablePieces.getAny().getCenterPiece().xSize; // assuming the piece is cubic
     }
 
-    private ArrayList<UpdateListener> listeners = new ArrayList<>();
+    private final ArrayList<UpdateListener> listeners = new ArrayList<>();
 
     public void onPieceChangeEvent(UpdateListener listener) {
         listeners.add(listener);
     }
 
+    /**
+     * @param listener the listener to be removed
+     */
     public void removePieceChangeListener(UpdateListener listener) {
         listeners.remove(listener);
     }

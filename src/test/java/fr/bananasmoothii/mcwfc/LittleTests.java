@@ -3,7 +3,7 @@ package fr.bananasmoothii.mcwfc;
 import fr.bananasmoothii.mcwfc.core.*;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
-import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
+import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -154,6 +154,9 @@ class LittleTests {
         space = new MCVirtualSpace(AIR);
         space.set(STONE, -4, 3, 8);
         assertEquals(STONE, space.getModuloCoords(1, -1, 26)); // 26 % 9 = 8
+
+        space = new MCVirtualSpace(new Bounds(-285, 64, 88, -282, 65, 91), AIR);
+        assertEquals(64, space.yInBounds(66));
     }
 
     @Test
@@ -176,7 +179,7 @@ class LittleTests {
         System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
     }
 
-    private static WeightedSet<PieceNeighbors> pieceSet;
+    private static PieceNeighborsSet pieceSet;
 
     @Test
     @Order(9)
