@@ -1,11 +1,9 @@
 package fr.bananasmoothii.mcwfc.core;
 
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
-import fr.bananasmoothii.mcwfc.core.util.Coords;
 import fr.bananasmoothii.mcwfc.core.util.ImmutablePieceNeighborsSet;
 import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -16,24 +14,22 @@ public class Wave {
     private final int pieceSize;
     private final long seed;
     private final List<@NotNull PieceCollapseListener> pieceCollapseListeners = new ArrayList<>();
+    private final @NotNull Piece defaultPiece;
 
     private boolean isCollapsed = false;
 
-    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds) {
-        this(pieces, bounds, ThreadLocalRandom.current().nextLong());
+    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, Piece defaultPiece) {
+        this(pieces, bounds, ThreadLocalRandom.current().nextLong(), defaultPiece);
     }
 
-    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, long seed) {
+    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, long seed, @NotNull Piece defaultPiece) {
         this.pieces = pieces.immutable();
         pieceSize = pieces.getAny().getCenterPiece().xSize; // assuming all pieces are cubic
         this.seed = seed;
-
-        // at the beginning, every piece is possible, the wave is not collapsed, so we add every possibility everywhere
-        Set<Piece> possiblePieces = new HashSet<>();
-        for (PieceNeighbors piece : pieces) {
-            possiblePieces.add(piece.getCenterPiece());
-        }
-        wave.setFill(possiblePieces);
+        this.defaultPiece = Objects.requireNonNull(defaultPiece);
+        if (defaultPiece.xSize != pieceSize || defaultPiece.ySize != pieceSize || defaultPiece.zSize != pieceSize)
+            throw new IllegalArgumentException("default piece has not the same size, it needs to be a cube of edge " +
+                    pieces);
     }
 
     public @NotNull Random getRandom(int pieceX, int pieceY, int pieceZ) {
@@ -50,39 +46,6 @@ public class Wave {
     public void collapse() {
         if (isCollapsed) return;
 
-        // TODO
-
-        isCollapsed = true;
-        lastChangedEntropies = null;
-    }
-
-    private Stack<Coords> lastChangedEntropies = new Stack<>();
-
-    /**
-     * This searches a piece with a low entropy among the last changed entropies
-     */
-    private @Nullable Piece chooseLowEntropyPiece(int lastX, int lastY, int lastZ) {
-        return chooseLowEntropyPiece(lastX, lastY, lastZ, false);
-    }
-
-    /**
-     * This searches a piece with a low entropy among the last changed entropies
-     * @param totalSearch if true, the search is done on the whole wave, otherwise only on the last changed entropies
-     */
-    private @Nullable Piece chooseLowEntropyPiece(int lastX, int lastY, int lastZ, boolean totalSearch) {
-        Random random = getRandom(lastX, lastY, lastZ);
-        if (totalSearch) {
-            int lowestEntropy = Integer.MAX_VALUE;
-            Piece lowestEntropyPiece = null;
-            for (int x = 0; x < wave.getXSize(); x++) {
-                for (int y = 0; y < wave.getYSize(); y++) {
-                    for (int z = 0; z < wave.getZSize(); z++) {
-                        Set<Piece> piece = wave.get(x, y, z);
-                        if ()
-                    }
-                }
-            }
-        }
     }
 
     public void registerPieceCollapseListener(PieceCollapseListener listener) {

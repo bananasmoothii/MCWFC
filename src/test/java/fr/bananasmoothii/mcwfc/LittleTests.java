@@ -5,7 +5,6 @@ import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
 import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
 import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
-import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -13,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static fr.bananasmoothii.mcwfc.BlockDataImpl.AIR;
 import static fr.bananasmoothii.mcwfc.BlockDataImpl.STONE;
@@ -23,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LittleTests {
-
-    public static final Supplier<BlockData> AIR_SUPPLIER = () -> AIR;
 
     @Test
     @Order(1)
@@ -149,26 +145,26 @@ class LittleTests {
     @Test
     @Order(7)
     void coordsAreInBounds() {
-        MCVirtualSpace space = new MCVirtualSpace(AIR_SUPPLIER);
+        MCVirtualSpace space = new MCVirtualSpace(AIR);
         space.ensureCapacityForElement(-7, -7, -7);
         space.ensureCapacityForElement(7, 7, 7);
         for (int x = -8; x <= 8; x++) {
             int xInBounds = space.xInBounds(x);
             assertTrue(space.xMin() <= xInBounds && xInBounds <= space.xMax());
         }
-        space = new MCVirtualSpace(AIR_SUPPLIER);
+        space = new MCVirtualSpace(AIR);
         space.set(STONE, -4, 3, 8);
         assertEquals(STONE, space.getModuloCoords(1, -1, 26)); // 26 % 9 = 8
 
-        space = new MCVirtualSpace(new Bounds(-285, 64, 88, -282, 65, 91), AIR_SUPPLIER);
+        space = new MCVirtualSpace(new Bounds(-285, 64, 88, -282, 65, 91), AIR);
         assertEquals(64, space.yInBounds(66));
     }
 
     @Test
     @Order(8)
     void generatePieces() {
-        MCVirtualSpace space = new MCVirtualSpace(AIR_SUPPLIER);
-        space.setFillSupplier(AIR_SUPPLIER);
+        MCVirtualSpace space = new MCVirtualSpace(AIR);
+        space.setFill(AIR);
         // define the real sample size
         space.ensureCapacityForElement(-1, -1, 0); // min point
         space.ensureCapacityForElement(1, 2, 5);   // max point

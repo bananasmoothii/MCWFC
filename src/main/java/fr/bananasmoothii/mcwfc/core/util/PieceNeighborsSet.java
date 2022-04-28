@@ -140,10 +140,6 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
         return iterator.next();
     }
 
-    public Set<Piece> getCenterPieces() {
-        return new HashSet<>(map.keySet());
-    }
-
     public PieceNeighbors chooseRandom() {
         return chooseRandom(ThreadLocalRandom.current());
     }

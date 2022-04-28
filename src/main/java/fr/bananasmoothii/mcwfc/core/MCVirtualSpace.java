@@ -8,35 +8,34 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 /**
  * A {@link VirtualSpace} with minecraft blocks ({@link BlockData}. It provides some useful methods, mainly to generate
- * {@link Piece}s. This implementation does not allow {@code null} fills (see {@link VirtualSpace#setFillSupplier(Supplier)}).
- * @see #generatePieces(int, boolean, boolean)
+ * {@link Piece}s. This implementation does not allow {@code null} fills (see {@link VirtualSpace#setFill(Object)}.
+ * @see #generatePieces(int, boolean)
  */
 @SuppressWarnings("NullableProblems")
 public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
 
-    public MCVirtualSpace(@NotNull Supplier<? extends @NotNull BlockData> fill) {
+    public MCVirtualSpace(@NotNull BlockData fill) {
         super();
-        setFillSupplier(fill);
+        setFill(fill);
     }
 
     public MCVirtualSpace(@NotNull VirtualSpace<@NotNull BlockData> propertiesIndicator) {
         super(propertiesIndicator);
-        if (propertiesIndicator.getFillSupplier() == null)
-            throw new NullPointerException("The propertiesIndicator cannot have a null fillSupplier value");
+        if (propertiesIndicator.getFill() == null)
+            throw new NullPointerException("The propertiesIndicator cannot have a null fill value");
     }
 
-    public MCVirtualSpace(int xSize, int ySize, int zSize, @NotNull Supplier<? extends BlockData> fill) {
+    public MCVirtualSpace(int xSize, int ySize, int zSize, @NotNull BlockData fill) {
         super(xSize, ySize, zSize);
-        setFillSupplier(fill);
+        setFill(fill);
     }
 
-    public MCVirtualSpace(@NotNull Bounds bounds, @NotNull Supplier<? extends BlockData> fill) {
+    public MCVirtualSpace(@NotNull Bounds bounds, @NotNull BlockData fill) {
         super(bounds);
-        setFillSupplier(fill);
+        setFill(fill);
     }
 
     /**
@@ -44,7 +43,7 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      * cartesian faces as in {@link Face#isCartesian()}. This method doesn't allow putting pieces upside down.
      * @param pieceSize the size of each {@link Piece} in x, y and z directions
      * @return a {@link WeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
-     * @throws NullPointerException if there is no {@link #setFillSupplier(Supplier) fillSupplier}.
+     * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
     public PieceNeighborsSet generatePieces(final int pieceSize) {
         return generatePieces(pieceSize, false, true);
@@ -61,7 +60,7 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      *                             vice-versa ({@code true}), or not ({code false}) ? If {@code false}, it will be almost
      *                             impossible to generate something higher in the {@link Wave}
      * @return a {@link WeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
-     * @throws NullPointerException if there is no {@link #setFillSupplier(Supplier) fillSupplier}.
+     * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
     public PieceNeighborsSet generatePieces(final int pieceSize, final boolean allowUpsideDown,
                                             final boolean useModuloCoordsTopAndBottom) {
@@ -88,7 +87,7 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
     }
 
     /**
-     * You may use this method only if a fill was set with {@link #setFillSupplier(Supplier)}.
+     * You may use this method only if a fill was set with {@link #setFill(BlockData)}.
      * @param useModuloCoords if some coordinates are out of bounds, it will take them back in the bounds. This means
      *                        that if you have a list of 3 elements, it will reformat your coordinates modulo (%) 3.
      *                        For exemple, if you call element of index 5 in that list, you will get the element of index
@@ -97,10 +96,10 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      *                        {@link VirtualSpace#xInBounds(int)}
      * @return the piece of size pieceSize from x, y, z to x+pieceSize, y+pieceSize, z+pieceSize. It may only return
      * {@code null} if "useModuloCoords" is true
-     * @throws NullPointerException if there is no {@link #setFillSupplier(Supplier) fillSupplier}.
+     * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
     public @Nullable Piece getPieceAt(final int x, final int y, final int z, final int pieceSize, final boolean useModuloCoords) {
-        BlockData fill = Objects.requireNonNull(getFillSupplier().get(), "fillSupplier gave a null value");
+        BlockData fill = getFill();
 
         if (useModuloCoords) {
             Piece piece = new Piece(pieceSize, fill);
@@ -158,8 +157,8 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
             zFrom = zTo;
             zTo = swapper;
         }
-        MCVirtualSpace result = new MCVirtualSpace(getFillSupplier());
-        result.setFillSupplier(getFillSupplier());
+        MCVirtualSpace result = new MCVirtualSpace(getFill());
+        result.setFill(getFill());
         for (int xi = xFrom; xi <= xTo; xi++) {
             for (int yi = yFrom; yi <= yTo; yi++) {
                 for (int zi = zFrom; zi <= zTo; zi++) {
@@ -174,12 +173,12 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
     }
 
     @Override
-    public void setFillSupplier(@NotNull Supplier<? extends @NotNull BlockData> fillSupplier) {
-        super.setFillSupplier(Objects.requireNonNull(fillSupplier));
+    public void setFill(@NotNull BlockData fill) {
+        super.setFill(Objects.requireNonNull(fill));
     }
 
     @Override
-    public @NotNull Supplier<? extends @NotNull BlockData> getFillSupplier() {
-        return Objects.requireNonNull(super.getFillSupplier());
+    public @NotNull BlockData getFill() {
+        return Objects.requireNonNull(super.getFill());
     }
 }
