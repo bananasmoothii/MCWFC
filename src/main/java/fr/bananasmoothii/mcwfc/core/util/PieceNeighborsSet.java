@@ -22,6 +22,10 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
         return map.size();
     }
 
+    public PieceNeighbors getNeighbors(Piece piece) {
+        return map.get(piece);
+    }
+
     @Override
     public boolean isEmpty() {
         return map.isEmpty();

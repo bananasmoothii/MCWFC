@@ -236,6 +236,12 @@ public enum Face {
         };
     }
 
+    private static final Face[] CARTESIAN_FACES = {NORTH, SOUTH, EAST, WEST, TOP, BOTTOM};
+
+    public static Face[] getCartesianFaces() {
+        return CARTESIAN_FACES;
+    }
+
     public @NotNull Face getOppositeFace() {
         return getWithMods(-modX, -modY, -modZ);
     }
