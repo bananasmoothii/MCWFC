@@ -15,8 +15,8 @@ import fr.bananasmoothii.mcwfc.core.Piece;
 import fr.bananasmoothii.mcwfc.core.PieceNeighbors;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
-import fr.bananasmoothii.mcwfc.core.util.HashWeightedSet;
 import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
+import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -85,14 +85,14 @@ public class Commands extends BaseCommand {
                 }
             }
 
-            final PieceNeighborsSet dataSet = space.generatePieces(pieceSize, allowUpsideDown);
+            /*final PieceNeighborsSet dataSet = space.generatePieces(pieceSize, allowUpsideDown);
             if (dataSet.size() > 0) {
                 pieceSets.put(player, dataSet);
                 sendMessage(player, "§aDone ! Dataset size: " + dataSet.size() + ". You can now run §n/mcwfc " +
                         "generate§a (Don't forget to move your selection if you don't want it to be modified)");
             } else {
                 sendMessage(player, "§eThe dataset is generated, but it is empty so idk what happened");
-            }
+            }*/
         });
     }
 
@@ -182,7 +182,7 @@ public class Commands extends BaseCommand {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
             try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc dumppiece")) {
                 placePiece(piece.getCenterPiece(), editSession, playerX, playerY, playerZ);
-                for (Map.Entry<Face, HashWeightedSet<Piece>> faceEntry : piece.getNeighbors().entrySet()) {
+                for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : piece.getNeighbors().entrySet()) {
                     final Face face = faceEntry.getKey();
                     placePiece(faceEntry.getValue().weightedChoose(), editSession,
                             playerX + face.getModX(), playerY + face.getModY(), playerZ + face.getModZ());

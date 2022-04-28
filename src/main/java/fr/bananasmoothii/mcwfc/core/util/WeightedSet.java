@@ -12,16 +12,16 @@ import java.util.function.Function;
 /**
  * A Set where each element have a weight. The default weight is 1.
  */
-public class HashWeightedSet<E> implements Set<E> {
+public class WeightedSet<E> implements Set<E> {
 
     private final Map<E, Integer> map = new HashMap<>();
     private int totalWeight = 0;
 
-    public HashWeightedSet() {
+    public WeightedSet() {
     }
 
     @SuppressWarnings("CopyConstructorMissesField")
-    public HashWeightedSet(HashWeightedSet<E> other) {
+    public WeightedSet(WeightedSet<E> other) {
         addAll(other);
     }
 
@@ -99,14 +99,14 @@ public class HashWeightedSet<E> implements Set<E> {
         return true;
     }
 
-    public void addAll(@NotNull HashWeightedSet<E> other) {
+    public void addAll(@NotNull WeightedSet<E> other) {
         addAll(other, 1);
     }
 
     /**
      * Adds avery element with a certain weight
      */
-    public void addAll(@NotNull HashWeightedSet<E> other, int weight) {
+    public void addAll(@NotNull WeightedSet<E> other, int weight) {
         final Iterator<Map.Entry<E, Integer>> iterator = other.elementsAndWeightsIterator();
         while (iterator.hasNext()) {
             final Map.Entry<E, Integer> next = iterator.next();
@@ -161,7 +161,7 @@ public class HashWeightedSet<E> implements Set<E> {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof HashWeightedSet<?> other)
+        if (o instanceof WeightedSet<?> other)
             return map.equals(other.map);
         return false;
     }
@@ -175,10 +175,15 @@ public class HashWeightedSet<E> implements Set<E> {
         return weightedChoose(ThreadLocalRandom.current());
     }
 
-    @SuppressWarnings("unchecked")
     public E weightedChoose(@NotNull Random random) {
         if (isEmpty()) throw new IllegalArgumentException("cannot choose anything from an empty WeightedSet");
-        return (E) toArray()[random.nextInt(totalWeight)];
+        final int targetWeight = random.nextInt(totalWeight) + 1;
+        int currentWeight = 0;
+        for (Map.Entry<E, Integer> entry : map.entrySet()) {
+            currentWeight += entry.getValue();
+            if (currentWeight >= targetWeight) return entry.getKey();
+        }
+        throw new IllegalStateException("totalWeight is too big and not possible or there are some weights below or equal to 0");
     }
 
     /**
@@ -187,7 +192,7 @@ public class HashWeightedSet<E> implements Set<E> {
      */
     public E getAny() {
         final Iterator<E> iterator = iterator();
-        if (!iterator().hasNext()) throw new IllegalArgumentException("The set is empty");
+        if (!iterator().hasNext()) throw new IllegalStateException("The set is empty");
         return iterator.next();
     }
 
@@ -225,13 +230,13 @@ public class HashWeightedSet<E> implements Set<E> {
                     }
 
                     /**
-                     * Warning: this uses {@link HashWeightedSet#add(Object, int)} which doesn't replace the value but adds
+                     * Warning: this uses {@link WeightedSet#add(Object, int)} which doesn't replace the value but adds
                      * it instead.
                      */
                     @Override
                     public Integer setValue(Integer value) {
                         int old = next().getValue();
-                        HashWeightedSet.this.add(next().getKey(), value);
+                        WeightedSet.this.add(next().getKey(), value);
                         return old;
                     }
                 };
@@ -249,8 +254,8 @@ public class HashWeightedSet<E> implements Set<E> {
      * This only allows mapping of the element, the weight will not change
      */
     @Contract(pure = true)
-    public HashWeightedSet<E> mapElements(Function<? super E, ? extends E> mappingFunction) {
-        final HashWeightedSet<E> result = new HashWeightedSet<>();
+    public WeightedSet<E> mapElements(Function<? super E, ? extends E> mappingFunction) {
+        final WeightedSet<E> result = new WeightedSet<>();
         for (Map.Entry<E, Integer> entry : map.entrySet()) {
             result.add(mappingFunction.apply(entry.getKey()), entry.getValue());
         }
@@ -267,9 +272,50 @@ public class HashWeightedSet<E> implements Set<E> {
         return false;
     }
 
-    public HashWeightedSet<E> copyMultiplyWeights(int weight) {
-        HashWeightedSet<E> copy = new HashWeightedSet<>();
+    public WeightedSet<E> copyMultiplyWeights(int weight) {
+        WeightedSet<E> copy = new WeightedSet<>();
         copy.addAll(this, weight);
         return copy;
+    }
+
+    /**
+     * This calculates the {@link #gcd(int, int) GCD} of the weights and divides each weight by that GCD
+     */
+    public void simplify() {
+        Iterator<Integer> iterator = map.values().iterator();
+        if (! iterator.hasNext()) return;
+        int gcd = iterator.next();
+        while (iterator.hasNext()) {
+            int weight = iterator.next();
+            gcd = gcd(gcd, weight);
+        }
+        if (gcd == 1) return;
+        for (Map.Entry<E, Integer> entry : map.entrySet()) {
+            final int oldValue = entry.getValue();
+            final int newValue = oldValue / gcd;
+            entry.setValue(newValue);
+            totalWeight -= oldValue - newValue;
+        }
+    }
+
+    /**
+     * This method has nothing to do really with {@link WeightedSet} but I won't make a new "Util" class just for one
+     * method...
+     * @return the greatest common divisor.
+     */
+    public static int gcd(int a, int b) {
+        int tempB;
+        while (true) {
+            // gcd(a, b) = b == 0 ? a : gcd(b, a % b)
+            if (b == 0) return a;
+            tempB = b;
+            b = a % b;
+            a = tempB;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return map.toString();
     }
 }

@@ -4,6 +4,7 @@ import fr.bananasmoothii.mcwfc.core.*;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
 import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
+import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -175,7 +176,7 @@ class LittleTests {
         space.set(STONE, 0, -1, 3);
         space.set(STONE, 0, 0, 4);
         space.set(STONE, 0, 0, 5);
-        pieceSet = space.generatePieces(2, true);
+        //pieceSet = space.generatePieces(2, true);
         System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
     }
 
@@ -187,5 +188,20 @@ class LittleTests {
         if (pieceSet == null) generatePieces();
         GeneratingWorld world = new GeneratingWorld(pieceSet);
         world.generateWFC(new Bounds(-8, -8, -8, 8, 8, 8));
+    }
+
+    @Test
+    @Order(10)
+    void gcd() {
+        assertEquals(8, WeightedSet.gcd(8, 32));
+        assertEquals(1, WeightedSet.gcd(8, 33));
+        assertEquals(33, WeightedSet.gcd(0, 33));
+        assertEquals(2, WeightedSet.gcd(228, 346));
+        WeightedSet<String> hws = new WeightedSet<>();
+        hws.add("10 times", 10);
+        hws.add("30 times", 30);
+        hws.add("100 times", 100);
+        hws.simplify();
+        assertEquals(14, hws.getTotalWeight());
     }
 }

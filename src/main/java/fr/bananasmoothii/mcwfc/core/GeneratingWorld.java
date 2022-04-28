@@ -136,7 +136,7 @@ public class GeneratingWorld {
         }
 
         public void addPieceNeighborsOption(@NotNull PieceNeighbors pieceNeighbors) {
-            for (Map.Entry<Face, HashWeightedSet<Piece>> faceEntry : pieceNeighbors.getNeighbors().entrySet()) {
+            for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : pieceNeighbors.getNeighbors().entrySet()) {
                 pieceNeighborsAtPosition.addAllNeighbors(faceEntry.getKey(), faceEntry.getValue());
             }
         }
@@ -147,7 +147,7 @@ public class GeneratingWorld {
 
         public List<PieceGeneratingTask> generate() {
             List<PieceGeneratingTask> newTasks = new ArrayList<>(pieceNeighborsAtPosition.getNeighbors().size());
-            for (Map.Entry<Face, HashWeightedSet<Piece>> faceEntry : pieceNeighborsAtPosition.getNeighbors().entrySet()) {
+            for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : pieceNeighborsAtPosition.getNeighbors().entrySet()) {
                 final Face face = faceEntry.getKey();
                 final int newX = x + face.getModX();
                 final int newY = y + face.getModY();

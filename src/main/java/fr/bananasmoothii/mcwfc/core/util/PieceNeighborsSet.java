@@ -10,6 +10,13 @@ import java.util.concurrent.ThreadLocalRandom;
 public class PieceNeighborsSet implements Set<PieceNeighbors> {
     private final Map<Piece, PieceNeighbors> map = new HashMap<>();
 
+    public PieceNeighborsSet() {
+    }
+
+    public PieceNeighborsSet(Collection<? extends PieceNeighbors> c) {
+        addAll(c);
+    }
+
     @Override
     public int size() {
         return map.size();
@@ -145,5 +152,18 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
             iter.next();
         }
         return iter.next();
+    }
+
+    /**
+     * Simplifies the coefficients for each {@link PieceNeighbors}. This method just calls {@link PieceNeighbors#simplify()},
+     * but be aware because that can be a time-consuming task.
+     * @see PieceNeighbors#simplify()
+     */
+    public void simplify() {
+        forEach(PieceNeighbors::simplify);
+    }
+
+    public @NotNull ImmutablePieceNeighborsSet immutable() {
+        return new ImmutablePieceNeighborsSet(this);
     }
 }
