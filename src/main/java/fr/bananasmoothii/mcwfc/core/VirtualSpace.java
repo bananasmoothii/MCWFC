@@ -1,6 +1,7 @@
 package fr.bananasmoothii.mcwfc.core;
 
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
+import fr.bananasmoothii.mcwfc.core.util.Coords;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -122,6 +123,10 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
         return fill;
     }
 
+    public @Nullable T get(Coords coords) {
+        return get(coords.x(), coords.y(), coords.z());
+    }
+
     public @Nullable T get(int x, int y, int z) {
         final T withoutFill = getWithoutFill(x, y, z);
         return withoutFill != null ? withoutFill : fill;
@@ -131,9 +136,25 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      * same as {@link #get(int, int, int)} but using always in-bounds coordinates.
      * @see #xInBounds(int)
      */
+    public @Nullable T getModuloCoords(@NotNull Coords coords) {
+        return getModuloCoords(coords.x(), coords.y(), coords.z());
+    }
+
+    /**
+     * same as {@link #get(int, int, int)} but using always in-bounds coordinates.
+     * @see #xInBounds(int)
+     */
     public @Nullable T getModuloCoords(int x, int y, int z) {
         final T withoutFill = getWithoutFillModuloCoords(x, y, z);
         return withoutFill != null ? withoutFill : fill;
+    }
+
+    /**
+     * Same as {@link #get(int, int, int)} but if the result is still {@code null} even with the
+     * {@link #setFill(Object) fill}, it will return the provided defaultValue.
+     */
+    public @NotNull T getOrDefault(@NotNull Coords coords, @NotNull T defaultValue) {
+        return getOrDefault(coords.x(), coords.y(), coords.z(), defaultValue);
     }
 
     /**
@@ -150,10 +171,26 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      * Same as {@link #get(int, int, int)} but if the result is still {@code null} even with the
      * {@link #setFill(Object) fill}, it will return the provided defaultValue.
      */
+    public @NotNull T getOrDefaultModuloCoords(@NotNull Coords coords, @NotNull T defaultValue) {
+        return getOrDefault(coords.x(), coords.y(), coords.z(), defaultValue);
+    }
+
+    /**
+     * Same as {@link #get(int, int, int)} but if the result is still {@code null} even with the
+     * {@link #setFill(Object) fill}, it will return the provided defaultValue.
+     */
     public @NotNull T getOrDefaultModuloCoords(int x, int y, int z, @NotNull T defaultValue) {
         T value = getModuloCoords(x, y, z);
         if (value == null) return defaultValue;
         return value;
+    }
+
+    /**
+     * @return {@code null} if there is no element at these coordinates, even if there is a <i>fill</i> set.
+     * @see #setFill(Object)
+     */
+    public @Nullable T getWithoutFill(@NotNull Coords coords) {
+        return getWithoutFill(coords.x(), coords.y(), coords.z());
     }
 
     /**
@@ -338,10 +375,9 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     }
 
     /**
-     * This iterator won't return the <i>fill</i> value if the element at a certain position is {@code null}.
-     * @see #setFill(Object)
+     * This iterator just gives all valid coordinates.
      */
-    public Iterator<ObjectWithCoordinates<T>> iteratorWithoutFill() {
+    public Iterator<Coords> coordsIterator() {
         return new Iterator<>() {
             private int currentX = xMin, currentY = yMin, currentZ = zMin;
 
@@ -352,9 +388,8 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
             }
 
             @Override
-            public ObjectWithCoordinates<T> next() {
-                ObjectWithCoordinates<T> element = new ObjectWithCoordinates<>(getWithoutFill(currentX, currentY, currentZ),
-                                currentX, currentY, currentZ);
+            public Coords next() {
+                Coords element = new Coords(currentX, currentY, currentZ);
                 if (++currentZ > zMax) {
                     currentZ = zMin;
                     currentY++;
@@ -370,6 +405,23 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
         };
     }
 
+    public Iterator<ObjectWithCoordinates<T>> iteratorWithoutFill() {
+        return new Iterator<>() {
+            private final Iterator<Coords> iterator = coordsIterator();
+
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public ObjectWithCoordinates<T> next() {
+                final Coords coords = iterator.next();
+                return new ObjectWithCoordinates<>(getWithoutFill(coords), coords);
+            }
+        };
+    }
+
     /**
      * Iterates over all elements but wrapped int {@link ObjectWithCoordinates} so you can have the coordinates
      * along.
@@ -378,29 +430,17 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     @Override
     public Iterator<ObjectWithCoordinates<T>> iterator() {
         return new Iterator<>() {
-            private int currentX = xMin, currentY = yMin, currentZ = zMin;
+            private final Iterator<Coords> iterator = coordsIterator();
 
             @Override
-            @Contract(pure = true)
             public boolean hasNext() {
-                return currentZ <= zMax && currentY <= yMax && currentX <= xMax;
+                return iterator.hasNext();
             }
 
             @Override
             public ObjectWithCoordinates<T> next() {
-                ObjectWithCoordinates<T> element = new ObjectWithCoordinates<>(get(currentX, currentY, currentZ),
-                        currentX, currentY, currentZ);
-                if (++currentZ > zMax) {
-                    currentZ = zMin;
-                    currentY++;
-                    if (currentY > yMax) {
-                        currentY = yMin;
-                        currentX++;
-                        if (currentX > xMax + 1 && currentY > yMax && currentZ > zMax)
-                            throw new NoSuchElementException("indexes above maximum");
-                    }
-                }
-                return element;
+                final Coords coords = iterator.next();
+                return new ObjectWithCoordinates<>(get(coords), coords);
             }
         };
     }
@@ -409,7 +449,15 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      * An object of type T with x, y and z coordinates
      * @param <T> the type of the object
      */
-    public static record ObjectWithCoordinates<T>(T object, int x, int y, int z) {}
+    public record ObjectWithCoordinates<T>(T object, int x, int y, int z) {
+        public ObjectWithCoordinates(T object, Coords coords) {
+            this(object, coords.x(), coords.y(), coords.z());
+        }
+
+        public Coords coords() {
+            return new Coords(x, y, z);
+        }
+    }
 
     public VirtualSpace<T> copy() {
         VirtualSpace<T> copy = new VirtualSpace<>(this);

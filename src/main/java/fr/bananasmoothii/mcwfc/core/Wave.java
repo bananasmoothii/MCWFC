@@ -1,9 +1,11 @@
 package fr.bananasmoothii.mcwfc.core;
 
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
+import fr.bananasmoothii.mcwfc.core.util.Coords;
 import fr.bananasmoothii.mcwfc.core.util.ImmutablePieceNeighborsSet;
 import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -14,22 +16,17 @@ public class Wave {
     private final int pieceSize;
     private final long seed;
     private final List<@NotNull PieceCollapseListener> pieceCollapseListeners = new ArrayList<>();
-    private final @NotNull Piece defaultPiece;
 
     private boolean isCollapsed = false;
 
-    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, Piece defaultPiece) {
-        this(pieces, bounds, ThreadLocalRandom.current().nextLong(), defaultPiece);
+    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds) {
+        this(pieces, bounds, ThreadLocalRandom.current().nextLong());
     }
 
-    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, long seed, @NotNull Piece defaultPiece) {
+    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, long seed) {
         this.pieces = pieces.immutable();
         pieceSize = pieces.getAny().getCenterPiece().xSize; // assuming all pieces are cubic
         this.seed = seed;
-        this.defaultPiece = Objects.requireNonNull(defaultPiece);
-        if (defaultPiece.xSize != pieceSize || defaultPiece.ySize != pieceSize || defaultPiece.zSize != pieceSize)
-            throw new IllegalArgumentException("default piece has not the same size, it needs to be a cube of edge " +
-                    pieces);
     }
 
     public @NotNull Random getRandom(int pieceX, int pieceY, int pieceZ) {
@@ -46,6 +43,55 @@ public class Wave {
     public void collapse() {
         if (isCollapsed) return;
 
+        // fill the wave with all possible states for each piece
+        for (VirtualSpace.ObjectWithCoordinates<Set<Piece>> node : wave) {
+            wave.set(pieces.getCenterPieces(), node.x(), node.y(), node.z());
+        }
+        // TODO
+
+
+        isCollapsed = true;
+        lastChangedEntropies = null;
+    }
+
+    private Stack<VirtualSpace.ObjectWithCoordinates<Set<Piece>>> lastChangedEntropies = new Stack<>();
+
+    /**
+     * This searches a node (coordinates) a piece with a low entropy among the last changed entropies
+     */
+    private @Nullable Coords chooseLowEntropyNode(int lastX, int lastY, int lastZ) {
+        return chooseLowEntropyNode(lastX, lastY, lastZ, false);
+    }
+
+    /**
+     * This searches a node (coordinates) with a low entropy among the last changed entropies
+     * @param totalSearch if true, the search is done on the whole wave, otherwise only on the last changed entropies
+     */
+    private @Nullable Coords chooseLowEntropyNode(int lastX, int lastY, int lastZ, boolean totalSearch) {
+        Random random = getRandom(lastX, lastY, lastZ);
+        int lowestEntropy = Integer.MAX_VALUE;
+        final ArrayList<Coords> lowestEntropyNodes = new ArrayList<>(); // this is a list so every piece has the same chance to be chosen
+        final Iterator<VirtualSpace.ObjectWithCoordinates<Set<Piece>>> iterator;
+        iterator = totalSearch ? wave.iterator() : lastChangedEntropies.iterator();
+        while (iterator.hasNext()) {
+            VirtualSpace.ObjectWithCoordinates<Set<Piece>> node = iterator.next();
+            final Set<Piece> object = node.object();
+            if (object.size() < lowestEntropy) {
+                lowestEntropy = object.size();
+                lowestEntropyNodes.clear();
+                lowestEntropyNodes.add(node.coords());
+            } else if (object.size() == lowestEntropy) {
+                lowestEntropyNodes.add(node.coords());
+            }
+        }
+        if (lowestEntropyNodes.isEmpty()) {
+            if (!totalSearch) {
+                return chooseLowEntropyNode(lastX, lastY, lastZ, true);
+            } else {
+                throw new IllegalStateException("No available node");
+            }
+        }
+        return lowestEntropyNodes.get(random.nextInt(lowestEntropyNodes.size()));
     }
 
     public void registerPieceCollapseListener(PieceCollapseListener listener) {
