@@ -21,6 +21,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -74,7 +75,8 @@ public class Commands extends BaseCommand {
                 sendMessage(player, "§cUnable to get your current selection");
                 return;
             }
-            final MCVirtualSpace space = new MCVirtualSpace(bounds, Material.AIR.createBlockData());
+            final BlockData air = Material.AIR.createBlockData();
+            final MCVirtualSpace space = new MCVirtualSpace(bounds, () -> air);
             final World playerWorld = player.getWorld();
             sendMessage(player, "Generating dataset... (this may take a while)");
             for (int x = bounds.xMin(); x <= bounds.xMax(); x++) {

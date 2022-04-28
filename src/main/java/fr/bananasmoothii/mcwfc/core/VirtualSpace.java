@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * A "visrtual" is a three-dimensional array list that allows negative indexes. There is no "append" because there is
@@ -33,7 +34,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     // these are always equal to Objects.length, Objects[0].length and Objects[0][0].length
     xArraySize, yArraySize, zArraySize;
 
-    private @Nullable T fill;
+    private @Nullable Supplier<? extends T> fillSupplier;
 
     public VirtualSpace() {
         this(10, 10, 10);
@@ -41,7 +42,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
 
     /**
      * Constructs a VirtualSpace with the same size as the one passed in parameter, with the same <i>enlargeAtOnce</i>
-     * and with the same <i>fill</i> value (see {@link #setFill(Object)})
+     * and with the same <i>fill</i> value (see {@link #setFillSupplier(Supplier)})
      */
     public VirtualSpace(@NotNull VirtualSpace<T> propertiesIndicator) {
         xArraySize = propertiesIndicator.xArraySize;
@@ -65,7 +66,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
 
         enlargeAtOnce = propertiesIndicator.enlargeAtOnce;
 
-        fill = propertiesIndicator.fill;
+        fillSupplier = propertiesIndicator.fillSupplier;
     }
 
     /**
@@ -106,25 +107,24 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     }
 
     /**
-     * Replaces all null values by this. Note that this is more visual: the arrays won't change, but instead of returning
-     * null, it will now return what you give in here. This means that if you set {@code null} at a certain coordinate
-     * and get the element at the same coordinates, you won't get {@code null}, but {@code fill} (the argument you
-     * provide here).
+     * Replaces all null values by what this will provide. Note that this is more visual: the arrays won't change, but instead of returning
+     * null, it will now return what the supplier gives. It is called everytime. This means that if you set {@code null} at a certain coordinate
+     * and get the element at the same coordinates, you won't get {@code null}, but what the supplier provides.
      */
-    public void setFill(@Nullable T fill) {
-        this.fill = fill;
+    public void setFillSupplier(@Nullable Supplier<? extends T> fillSupplier) {
+        this.fillSupplier = fillSupplier;
     }
 
     /**
-     * @see #setFill(Object)
+     * @see #setFillSupplier(Supplier)
      */
-    public @Nullable T getFill() {
-        return fill;
+    public @Nullable Supplier<? extends T> getFillSupplier() {
+        return fillSupplier;
     }
 
     public @Nullable T get(int x, int y, int z) {
         final T withoutFill = getWithoutFill(x, y, z);
-        return withoutFill != null ? withoutFill : fill;
+        return withoutFill != null || fillSupplier == null ? withoutFill : fillSupplier.get();
     }
 
     /**
@@ -133,12 +133,12 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      */
     public @Nullable T getModuloCoords(int x, int y, int z) {
         final T withoutFill = getWithoutFillModuloCoords(x, y, z);
-        return withoutFill != null ? withoutFill : fill;
+        return withoutFill != null || fillSupplier == null ? withoutFill : fillSupplier.get();
     }
 
     /**
      * Same as {@link #get(int, int, int)} but if the result is still {@code null} even with the
-     * {@link #setFill(Object) fill}, it will return the provided defaultValue.
+     * {@link #setFillSupplier(Supplier) fillSupplier}, it will return the provided defaultValue.
      */
     public @NotNull T getOrDefault(int x, int y, int z, @NotNull T defaultValue) {
         T value = get(x, y, z);
@@ -148,7 +148,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
 
     /**
      * Same as {@link #get(int, int, int)} but if the result is still {@code null} even with the
-     * {@link #setFill(Object) fill}, it will return the provided defaultValue.
+     * {@link #setFillSupplier(Supplier) fillSupplier}, it will return the provided defaultValue.
      */
     public @NotNull T getOrDefaultModuloCoords(int x, int y, int z, @NotNull T defaultValue) {
         T value = getModuloCoords(x, y, z);
@@ -158,7 +158,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
 
     /**
      * @return {@code null} if there is no element at these coordinates, even if there is a <i>fill</i> set.
-     * @see #setFill(Object)
+     * @see #setFillSupplier(Supplier)
      */
     public @Nullable T getWithoutFill(int x, int y, int z) {
         try {
@@ -323,7 +323,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
             zTo = swapper;
         }
         VirtualSpace<T> result = new VirtualSpace<>();
-        result.setFill(getFill());
+        result.fillSupplier = fillSupplier;
         for (int xi = xFrom; xi <= xTo; xi++) {
             for (int yi = yFrom; yi <= yTo; yi++) {
                 for (int zi = zFrom; zi <= zTo; zi++) {
@@ -339,7 +339,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
 
     /**
      * This iterator won't return the <i>fill</i> value if the element at a certain position is {@code null}.
-     * @see #setFill(Object)
+     * @see #setFillSupplier(Supplier)
      */
     public Iterator<ObjectWithCoordinates<T>> iteratorWithoutFill() {
         return new Iterator<>() {
@@ -424,7 +424,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof VirtualSpace other) {
-            if (!Objects.equals(fill, other.fill)) return false;
+            if (!Objects.equals(fillSupplier, other.fillSupplier)) return false;
             Iterator<ObjectWithCoordinates<T>> thisIterator = iteratorWithoutFill();
             @SuppressWarnings("unchecked")
             Iterator<ObjectWithCoordinates<?>> objIterator = other.iteratorWithoutFill();
@@ -523,7 +523,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
         for (int x = xMin + xOffset; x <= xMax + xOffset; x++) {
             for (int y = yMin + yOffset ; y <= yMax + yOffset; y++) {
                 T element = data[x][y][zLayer + zOffset];
-                System.out.print(element != null ? element : fill != null ? fill : ' ');
+                System.out.print(element != null ? element : fillSupplier != null ? fillSupplier.get() : ' ');
                 System.out.print(' ');
             }
             System.out.print('\n');
