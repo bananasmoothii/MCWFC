@@ -69,7 +69,6 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
         for (int x = xMin(); x <= xMax(); x++) {
             for (int y = yMin(); y <= yMax(); y++) {
                 for (int z = zMin(); z <= zMax(); z++) {
-                    //System.out.println("Generating " + x + ' ' + y + ' ' + z);
                     @SuppressWarnings("ConstantConditions") // useModuloCoords is true
                     PieceNeighbors pieceNeighbors = new PieceNeighbors(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
                     pieceNeighbors.addNeighbor(Face.TOP, getPieceAt(new Coords(x, y + pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));

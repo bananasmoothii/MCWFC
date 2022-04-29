@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.log;
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
 public class Piece {
@@ -278,28 +279,32 @@ public class Piece {
 
     @Contract(pure = true)
     public void debugPrint(int zLayer) {
+        StringBuilder sb = new StringBuilder();
         for (int y = 0; y < ySize; y++) {
             for (int x = 0; x < xSize; x++) {
-                System.out.print(data[x][y][zLayer]);
-                System.out.print(' ');
+                sb.append(data[x][y][zLayer]);
+                sb.append(' ');
             }
-            System.out.print('\n');
+            sb.append('\n');
         }
-        System.out.print('\n');
+        sb.append('\n');
+        log.info(sb.toString());
     }
 
     @Contract(pure = true)
     public void debugPrint() {
+        StringBuilder sb = new StringBuilder();
         for (int y = 0; y < ySize; y++) {
             for (int z = 0; z < zSize; z++) {
                 for (int x = 0; x < xSize; x++) {
-                    System.out.print(data[x][y][z]);
-                    System.out.print(' ');
+                    sb.append(data[x][y][z]);
+                    sb.append(' ');
                 }
-                System.out.print("   ");
+                sb.append("   ");
             }
-            System.out.print('\n');
+            sb.append('\n');
         }
-        System.out.print('\n');
+        sb.append('\n');
+        log.info(sb.toString());
     }
 }

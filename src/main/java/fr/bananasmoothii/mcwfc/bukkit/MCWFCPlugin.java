@@ -4,13 +4,17 @@ import co.aikar.commands.PaperCommandManager;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.logging.Logger;
+
 public final class MCWFCPlugin extends JavaPlugin {
 
     private static MCWFCPlugin inst;
+    public static Logger log;
 
     @Override
     public void onEnable() {
         inst = this;
+        log = getLogger();
         PaperCommandManager manager = new PaperCommandManager(this);
         manager.registerCommand(new Commands());
     }

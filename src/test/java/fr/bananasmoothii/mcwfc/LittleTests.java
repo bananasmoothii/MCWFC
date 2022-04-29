@@ -185,12 +185,12 @@ class LittleTests {
     @Order(9)
     void waveFunctionCollapse() {
         if (pieceSet == null) generatePieces();
-        final Bounds bounds = new Bounds(-10, -10, -10, 10, 10, 10);
+        final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
+        Piece defaultPiece = new Piece(2, 2, 2, AIR);
         for (int i = 0; i < 4; i++) {
             try {
-                Wave wave = new Wave(pieceSet, bounds);
-                wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
-                        System.out.println("Collapsed " + pieceX + ", " + pieceY + ", " + pieceZ + ": " + piece));
+                Wave wave = new Wave(pieceSet, bounds, defaultPiece);
+                System.out.println("Collapsing the wave with modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
                 return;
@@ -205,12 +205,12 @@ class LittleTests {
     @Order(10)
     void waveFunctionCollapseWithoutModuloCoords() {
         if (pieceSet == null) generatePieces();
-        final Bounds bounds = new Bounds(-10, -10, -10, 10, 10, 10);
+        final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
+        Piece defaultPiece = new Piece(2, 2, 2, AIR);
         for (int i = 0; i < 4; i++) {
             try {
-                Wave wave = new Wave(pieceSet, bounds, false);
-                wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
-                        System.out.println("Collapsed " + pieceX + ", " + pieceY + ", " + pieceZ + ": " + piece));
+                Wave wave = new Wave(pieceSet, bounds, defaultPiece, false);
+                System.out.println("Collapsing the wave without modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
                 return;

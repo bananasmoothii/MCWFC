@@ -9,10 +9,7 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
-import fr.bananasmoothii.mcwfc.core.MCVirtualSpace;
-import fr.bananasmoothii.mcwfc.core.Piece;
-import fr.bananasmoothii.mcwfc.core.PieceNeighbors;
-import fr.bananasmoothii.mcwfc.core.Wave;
+import fr.bananasmoothii.mcwfc.core.*;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
 import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
@@ -27,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -37,6 +35,7 @@ import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.sendMessage;
 @CommandPermission("mcwfc.use")
 public class Commands extends BaseCommand {
     private static final Map<Player, PieceNeighborsSet> pieceSets = new WeakHashMap<>();
+    private static final boolean INCREMENTAL_GENERATION = true;
 
     @Subcommand("generate dataset")
     @Syntax("<sample size> [allow upside down (default: false)] [use modulo coords for top and bottom (default: false)]")
@@ -70,7 +69,7 @@ public class Commands extends BaseCommand {
                 allowUpsideDown = Boolean.parseBoolean(args[1]);
             }
 
-            boolean useModuloCoordsTopAndBottom = false;
+            boolean useModuloCoordsTopAndBottom = true;
             if (args.length >= 3) {
                 useModuloCoordsTopAndBottom = Boolean.parseBoolean(args[2]);
             }
@@ -107,8 +106,10 @@ public class Commands extends BaseCommand {
 
     @Subcommand("generate")
     @Description("Wipes out your current selection and replaces it with a generated \"map\" based on the pieces you " +
-            "generated with /mcwfc generate pieces")
-    @Syntax("[seed (default: random number)]")
+            "generated with /mcwfc generate pieces. The parameter \"use modulo coords\" is used when the generator " +
+            "comes to an edge. If it is set to true (the default), instead of saying \"oh, there is an edge here\", " +
+            "it will go to the opposite side of your selection.")
+    @Syntax("[seed (default: random number)] [use modulo coords (default: true)]")
     @CommandCompletion("@nothing")
     public static void generate(Player player, String[] args) {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
@@ -126,6 +127,11 @@ public class Commands extends BaseCommand {
                 seed = ThreadLocalRandom.current().nextLong();
             }
 
+            boolean useModuloCoords = true;
+            if (args.length >= 2) {
+                useModuloCoords = Boolean.parseBoolean(args[1]);
+            }
+
             final Bounds bounds;
             try {
                 bounds = getSelection(player);
@@ -134,17 +140,46 @@ public class Commands extends BaseCommand {
                 return;
             }
 
+            final Piece defaultPiece = null; // new Piece(pieces.getAny().getCenterPiece().xSize, Material.AIR.createBlockData());
+
             final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
-            Wave wave = new Wave(pieces, bounds);
+            Wave wave = new Wave(pieces, bounds, defaultPiece, useModuloCoords, seed);
             final LocalSession playerSession = bukkitPlayer.getSession();
-            wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
-                    Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
-                        int xMin = pieceX * piece.xSize;
-                        int yMin = pieceY * piece.ySize;
-                        int zMin = pieceZ * piece.zSize;
-                        int xMax = (pieceX + 1) * piece.xSize; // max coords are exclusive
-                        int yMax = (pieceY + 1) * piece.ySize;
-                        int zMax = (pieceZ + 1) * piece.zSize;
+            if (INCREMENTAL_GENERATION)
+                wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
+                        Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
+                            int xMin = pieceX * piece.xSize;
+                            int yMin = pieceY * piece.ySize;
+                            int zMin = pieceZ * piece.zSize;
+                            int xMax = (pieceX + 1) * piece.xSize; // max coords are exclusive
+                            int yMax = (pieceY + 1) * piece.ySize;
+                            int zMax = (pieceZ + 1) * piece.zSize;
+                            try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc generate")) {
+                                for (int x = xMin, xInPiece = 0; x < xMax; x++, xInPiece++) {
+                                    for (int y = yMin, yInPiece = 0; y < yMax; y++, yInPiece++) {
+                                        for (int z = zMin, zInPiece = 0; z < zMax; z++, zInPiece++) {
+                                            editSession.setBlock(x, y, z, BukkitAdapter.adapt(piece.get(xInPiece, yInPiece, zInPiece)));
+                                        }
+                                    }
+                                }
+                                //playerSession.remember(editSession);
+                            }
+                        }));
+
+            sendMessage(player, "Generating... (this may take a while)");
+            try {
+                wave.collapse();
+                if (!INCREMENTAL_GENERATION) {
+                    for (VirtualSpace.ObjectWithCoordinates<Set<Piece>> node : wave.getWave()) {
+                        Set<Piece> piecesAtNode = node.object();
+                        if (piecesAtNode.isEmpty()) continue;
+                        Piece piece = piecesAtNode.iterator().next();
+                        int xMin = node.x() * piece.xSize;
+                        int yMin = node.y() * piece.ySize;
+                        int zMin = node.z() * piece.zSize;
+                        int xMax = (node.x() + 1) * piece.xSize; // max coords are exclusive
+                        int yMax = (node.y() + 1) * piece.ySize;
+                        int zMax = (node.z() + 1) * piece.zSize;
                         try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc generate")) {
                             for (int x = xMin, xInPiece = 0; x < xMax; x++, xInPiece++) {
                                 for (int y = yMin, yInPiece = 0; y < yMax; y++, yInPiece++) {
@@ -155,22 +190,27 @@ public class Commands extends BaseCommand {
                             }
                             playerSession.remember(editSession);
                         }
-                    }));
-            sendMessage(player, "Generating... (this may take a while)");
-            try {
-                wave.collapse();
+                    }
+                }
             } catch (Wave.GenerationFailedException e) {
                 sendMessage(player, "§cSorry, the generation failed. This can happen sometimes if your " +
                         "dataset is too complex. But this happens randomly, so just try again (if you set a seed, make sure " +
                         "to change it otherwise it will encounter the same problem). If you still get this error, please " +
                         "try with a less complex dataset, that means a dataset with a low variety (using less different " +
-                        "blocs).");
+                        "blocs). You can also use a dataset with modulo coords (the default parameter)");
             } catch (OutOfMemoryError e) {
                 sendMessage(player, "§cOops, your current selection is too big for this server, because " +
                         "it just ran out of memory. Please try again with a smaller selection. If you get this error " +
                         "even with a smaller generation area, this may be a bug.");
             }
             sendMessage(player, "§aDone with generating !");
+            if (wave.hasImpossibleStates() && defaultPiece != null)
+                sendMessage(player, "§cSorry, but your generation has some impossible states. This can happen sometimes if your " +
+                        "dataset is too complex. But this happens randomly, so just try again (if you set a seed, make sure " +
+                        "to change it otherwise it will encounter the same problem). If you still get this error, please " +
+                        "try with a less complex dataset, that means a dataset with a low variety (using less different " +
+                        "blocs). You can also use a dataset with modulo coords (the default parameter)");
+
         });
     }
 

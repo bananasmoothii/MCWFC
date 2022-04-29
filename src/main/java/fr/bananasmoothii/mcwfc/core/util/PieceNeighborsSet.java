@@ -71,7 +71,7 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
      * Always returns {@code true}
      */
     @Override
-    public boolean add(PieceNeighbors pieceNeighbors) {
+    public boolean add(@NotNull PieceNeighbors pieceNeighbors) {
         PieceNeighbors inMap = map.get(pieceNeighbors.getCenterPiece());
         if (inMap == null) {
             map.put(pieceNeighbors.getCenterPiece(), pieceNeighbors);

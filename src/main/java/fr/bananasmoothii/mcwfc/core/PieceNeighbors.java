@@ -96,7 +96,7 @@ public class PieceNeighbors {
      * @return a map with the pieces and the corresponding weights. It is the same as used internally, so be careful with
      * it.
      */
-    public @NotNull WeightedSet<Piece> getNeighbors(@NotNull Face face) {
+    public @Nullable WeightedSet<Piece> getNeighbors(@NotNull Face face) {
         return neighbors.get(face);
     }
 
