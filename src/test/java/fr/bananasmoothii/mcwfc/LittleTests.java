@@ -16,8 +16,7 @@ import java.util.Set;
 import static fr.bananasmoothii.mcwfc.BlockDataImpl.AIR;
 import static fr.bananasmoothii.mcwfc.BlockDataImpl.STONE;
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LittleTests {
@@ -176,7 +175,7 @@ class LittleTests {
         space.set(STONE, 0, -1, 3);
         space.set(STONE, 0, 0, 4);
         space.set(STONE, 0, 0, 5);
-        //pieceSet = space.generatePieces(2, true);
+        pieceSet = space.generatePieces(2);
         System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
     }
 
@@ -184,14 +183,46 @@ class LittleTests {
 
     @Test
     @Order(9)
-    void generateWorld() {
+    void waveFunctionCollapse() {
         if (pieceSet == null) generatePieces();
-        GeneratingWorld world = new GeneratingWorld(pieceSet);
-        world.generateWFC(new Bounds(-8, -8, -8, 8, 8, 8));
+        final Bounds bounds = new Bounds(-10, -10, -10, 10, 10, 10);
+        for (int i = 0; i < 4; i++) {
+            try {
+                Wave wave = new Wave(pieceSet, bounds);
+                wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
+                        System.out.println("Collapsed " + pieceX + ", " + pieceY + ", " + pieceZ + ": " + piece));
+                wave.collapse();
+                System.out.println("Yay, the wave has collapsed!");
+                return;
+            } catch (Wave.GenerationFailedException e) {
+                System.out.println("The wave has failed to collapse, retrying...");
+            }
+        }
+        fail("The wave has failed to collapse after 4 attempts");
     }
 
     @Test
     @Order(10)
+    void waveFunctionCollapseWithoutModuloCoords() {
+        if (pieceSet == null) generatePieces();
+        final Bounds bounds = new Bounds(-10, -10, -10, 10, 10, 10);
+        for (int i = 0; i < 4; i++) {
+            try {
+                Wave wave = new Wave(pieceSet, bounds, false);
+                wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
+                        System.out.println("Collapsed " + pieceX + ", " + pieceY + ", " + pieceZ + ": " + piece));
+                wave.collapse();
+                System.out.println("Yay, the wave has collapsed!");
+                return;
+            } catch (Wave.GenerationFailedException e) {
+                System.out.println("The wave has failed to collapse, retrying...");
+            }
+        }
+        fail("The wave has failed to collapse after 4 attempts");
+    }
+
+    @Test
+    @Order(11)
     void gcd() {
         assertEquals(8, WeightedSet.gcd(8, 32));
         assertEquals(1, WeightedSet.gcd(8, 33));

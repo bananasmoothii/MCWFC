@@ -240,6 +240,24 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
         set(object.object, object.x, object.y, object.z);
     }
 
+    public void set(@Nullable T object, int x, int y, int z, boolean useModuloCoords) {
+        if (useModuloCoords) setModuloCoords(object, x, y, z);
+        else set(object, x, y, z);
+    }
+
+    public void set(@NotNull ObjectWithCoordinates<T> object, boolean useModuloCoords) {
+        if (useModuloCoords) setModuloCoords(object);
+        else set(object);
+    }
+
+    public void setModuloCoords(@Nullable T object, int x, int y, int z) {
+        data[xInBounds(x) + xOffset][yInBounds(y) + yOffset][zInBounds(z) + zOffset] = object;
+    }
+
+    public void setModuloCoords(@NotNull ObjectWithCoordinates<T> object) {
+        setModuloCoords(object.object, object.x, object.y, object.z);
+    }
+
     /**
      * Ensures that an element can be set at the given coordinates
      */

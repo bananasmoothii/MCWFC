@@ -10,7 +10,10 @@ import java.util.Iterator;
 public class ImmutablePieceNeighborsSet extends PieceNeighborsSet {
 
     public ImmutablePieceNeighborsSet(PieceNeighborsSet c) {
-        super(c);
+        for (PieceNeighbors c1 : c) {
+            //noinspection UseBulkOperation
+            super.add(c1);
+        }
     }
 
     @Override

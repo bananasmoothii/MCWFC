@@ -9,9 +9,8 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Wave {
-    private final VirtualSpace<Set<Piece>> wave = new VirtualSpace<>();
+    private final VirtualSpace<Set<Piece>> wave;
     private final ImmutablePieceNeighborsSet pieces;
-    private final int pieceSize;
     private final long seed;
     private final List<@NotNull PieceCollapseListener> pieceCollapseListeners = new ArrayList<>();
     public final boolean useModuloCoords;
@@ -26,8 +25,9 @@ public class Wave {
     }
 
     public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, boolean useModuloCoords, long seed) {
+        wave = new VirtualSpace<>(bounds);
         this.pieces = pieces.immutable();
-        pieceSize = pieces.getAny().getCenterPiece().xSize; // assuming all pieces are cubic
+        //pieceSize = pieces.getAny().getCenterPiece().xSize; // assuming all pieces are cubic
         this.useModuloCoords = useModuloCoords;
         this.seed = seed;
     }
@@ -48,10 +48,11 @@ public class Wave {
 
         // fill the wave with all possible states for each piece
         for (ObjectWithCoordinates<Set<Piece>> node : wave) {
-            wave.set(pieces.getCenterPieces(), node.x(), node.y(), node.z());
+            wave.set(pieces.getCenterPieces(), node.x(), node.y(), node.z(), useModuloCoords);
         }
 
         final Random random0 = getRandom(0, 0, 0);
+        lastChangedEntropies = new Stack<>();
         int lastX = random0.nextInt(wave.xMin(), wave.xMax());
         int lastY = random0.nextInt(wave.yMin(), wave.yMax());
         int lastZ = random0.nextInt(wave.zMin(), wave.zMax());
@@ -59,12 +60,17 @@ public class Wave {
             // choose a random node
             final Coords node = chooseLowEntropyNode(lastX, lastY, lastZ);
             if (node == null) {
+                // finished
                 isCollapsed = true;
                 lastChangedEntropies = null;
                 break;
             }
             propagateCollapseFrom(node.x(), node.y(), node.z(), collapse(node.x(), node.y(), node.z()));
         }
+    }
+
+    private boolean isInBounds10(Coords coords) {
+        return coords.x() >= -10 && coords.x() <= 10 && coords.y() >= -10 && coords.y() <= 10 && coords.z() >= -10 && coords.z() <= 10;
     }
 
     /**
@@ -100,9 +106,9 @@ public class Wave {
                     final int weight = pieces.getNeighbors(actualNeighbor)
                                     .getNeighbors(face.getOppositeFace())
                                     .getWeight(piece);
-                    if (weight == 0) throw new IllegalStateException("A \"valid\" piece is not recognized by one of its neighbors");
                     pieceWeight += weight;
                 }
+                if (pieceWeight == 0) throw new IllegalStateException("A \"valid\" piece is not recognized by its neighbors");
             }
             if (isValidPiece) {
                 collapseCandidates.add(piece, pieceWeight);
@@ -111,7 +117,7 @@ public class Wave {
         if (collapseCandidates.isEmpty()) throw new GenerationFailedException("Encountered an impossible state");
         final Piece collapsed = Objects.requireNonNull(collapseCandidates.weightedChoose(), "weightedChoose() returned null");
         final SingleElementSet<Piece> set = new SingleElementSet<>(collapsed);
-        wave.set(set, x, y, z);
+        wave.set(set, x, y, z, useModuloCoords);
         lastChangedEntropies.push(new ObjectWithCoordinates<>(set, x, y, z));
         pieceCollapsed(x, y, z, collapsed);
         return collapsed;
@@ -126,7 +132,7 @@ public class Wave {
     }
 
     private void propagateCollapse(int x, int y, int z, Set<Piece> validNeighbors) throws GenerationFailedException {
-        final Set<Piece> actualNeighbors = wave.get(x, y, z, useModuloCoords);
+        final Set<Piece> actualNeighbors = wave.get(x, y, z); // not using modulo coords here otherwise actualNeighbor will never be null and the loop will never end
         if (actualNeighbors == null) return;
         final int sizeBefore = actualNeighbors.size();
         if (sizeBefore <= 1) return;
@@ -154,7 +160,7 @@ public class Wave {
         return wave.get(x, y, z).size() == 1;
     }
 
-    private Stack<ObjectWithCoordinates<Set<Piece>>> lastChangedEntropies = new Stack<>();
+    private Stack<ObjectWithCoordinates<Set<Piece>>> lastChangedEntropies;
 
     /**
      * This searches a node (coordinates) a piece with a low entropy (but strictly above 1, otherwise that means the wave
@@ -174,12 +180,16 @@ public class Wave {
     private @Nullable Coords chooseLowEntropyNode(int lastX, int lastY, int lastZ, boolean totalSearch) {
         Random random = getRandom(lastX, lastY, lastZ);
         int lowestEntropy = Integer.MAX_VALUE;
-        final ArrayList<Coords> lowestEntropyNodes = new ArrayList<>(); // this is a list so every piece has the same chance to be chosen
+        final Set<Coords> lowestEntropyNodes = new HashSet<>(); // this is a list so every piece has the same chance to be chosen
         final Iterator<ObjectWithCoordinates<Set<Piece>>> iterator;
         iterator = totalSearch ? wave.iterator() : lastChangedEntropies.iterator();
         while (iterator.hasNext()) {
             ObjectWithCoordinates<Set<Piece>> node = iterator.next();
             final Set<Piece> object = node.object();
+            if (!totalSearch) {
+                // using last changed entropies, that means some entropies might be wrong
+                if (Objects.requireNonNull(wave.get(node.coords())).size() <= 1) continue;
+            }
             if (1 < object.size() && object.size() < lowestEntropy) {
                 lowestEntropy = object.size();
                 lowestEntropyNodes.clear();
@@ -195,7 +205,13 @@ public class Wave {
                 return null;
             }
         }
-        return lowestEntropyNodes.get(random.nextInt(lowestEntropyNodes.size()));
+        // returning a random element
+        final int index = random.nextInt(lowestEntropyNodes.size());
+        final Iterator<Coords> iter = lowestEntropyNodes.iterator();
+        for (int i = 0; i < index; i++) {
+            iter.next();
+        }
+        return iter.next();
     }
 
     public void registerPieceCollapseListener(PieceCollapseListener listener) {
