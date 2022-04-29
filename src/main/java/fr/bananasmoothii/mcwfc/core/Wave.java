@@ -43,7 +43,7 @@ public class Wave {
     /**
      * Automatically collapses the hole {@link Wave}. Does nothing if the {@link Wave} is already collapsed.
      */
-    public void collapse() {
+    public void collapse() throws GenerationFailedException {
         if (isCollapsed) return;
 
         // fill the wave with all possible states for each piece
@@ -68,27 +68,43 @@ public class Wave {
         }
     }
 
-    private void collapse(int x, int y, int z) {
+    private void collapse(int x, int y, int z) throws GenerationFailedException {
         final WeightedSet<Piece> collapseCandidates = new WeightedSet<>();
-        for (Face face : Face.getCartesianFaces()) {
-            final int x1 = x - face.getModX();
-            final int y1 = y - face.getModY();
-            final int z1 = z - face.getModZ();
-            if (useModuloCoords) {
-                for (Piece piece : Objects.requireNonNull(wave.getModuloCoords(x1, y1, z1))) {
-                    final PieceNeighbors neighbors = pieces.getNeighbors(piece);
-                    collapseCandidates.addAll(neighbors.getNeighbors(face));
+        for (Piece piece : Objects.requireNonNull(wave.get(x, y, z, useModuloCoords))) {
+            final PieceNeighbors neighbors = pieces.getNeighbors(piece);
+            int pieceWeight = 0;
+            boolean isValidPiece = true;
+            for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : neighbors.getNeighbors().entrySet()) {
+                boolean foundMatchingNeighbors = false;
+                final Set<Piece> actualNeighbors = wave.get(
+                        x + faceEntry.getKey().getModX(),
+                        y + faceEntry.getKey().getModY(),
+                        z + faceEntry.getKey().getModZ(),
+                        useModuloCoords);
+                if (actualNeighbors == null) continue;
+                for (Piece expectedNeighbor : faceEntry.getValue()) {
+                    if (actualNeighbors.contains(expectedNeighbor)) {
+                        foundMatchingNeighbors = true;
+                        break;
+                    }
                 }
-            } else {
-                if (x1 < wave.xMin() || x1 > wave.xMax()
-                        || y1 < wave.yMin() || y1 > wave.yMax()
-                        || z1 < wave.zMin() || z1 > wave.zMax()) continue;
-                for (Piece piece : Objects.requireNonNull(wave.get(x1, y1, z1))) {
-                    final PieceNeighbors neighbors = pieces.getNeighbors(piece);
-                    collapseCandidates.addAll(neighbors.getNeighbors(face));
+                if (!foundMatchingNeighbors) {
+                    isValidPiece = false;
+                    break;
+                }
+                for (Piece actualNeighbor : actualNeighbors) {
+                    final int weight = pieces.getNeighbors(actualNeighbor)
+                                    .getNeighbors(faceEntry.getKey().getOppositeFace())
+                                    .getWeight(piece);
+                    if (weight == 0) throw new IllegalStateException("A \"valid\" piece is not recognized by one of its neighbors");
+                    pieceWeight += weight;
                 }
             }
+            if (isValidPiece) {
+                collapseCandidates.add(piece, pieceWeight);
+            }
         }
+        if (collapseCandidates.isEmpty()) throw new GenerationFailedException("Encountered an impossible state");
         final Piece collapsed = Objects.requireNonNull(collapseCandidates.weightedChoose(), "weightedChoose() returned null");
         final SingleElementSet<Piece> set = new SingleElementSet<>(collapsed);
         wave.set(set, x, y, z);
@@ -106,6 +122,7 @@ public class Wave {
     }
 
     private void propagateCollapse(int x, int y, int z) {
+        if (nodeIsCollapsed(x, y, z)) return;
         // TODO
     }
 
@@ -176,5 +193,11 @@ public class Wave {
     @FunctionalInterface
     public interface PieceCollapseListener {
         void onCollapse(int pieceX, int pieceY, int pieceZ, Piece piece);
+    }
+
+    public static class GenerationFailedException extends Exception {
+        public GenerationFailedException(String message) {
+            super(message);
+        }
     }
 }

@@ -150,6 +150,24 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     }
 
     /**
+     * same as {@link #get(int, int, int)} but using always in-bounds coordinates.
+     * @param useModuloCoords whether to use always in-bounds coordinates.
+     * @see #xInBounds(int)
+     */
+    public @Nullable T get(@NotNull Coords coords, boolean useModuloCoords) {
+        return useModuloCoords ? getModuloCoords(coords) : get(coords);
+    }
+
+    /**
+     * same as {@link #get(int, int, int)} but using always in-bounds coordinates.
+     * @param useModuloCoords whether to use always in-bounds coordinates.
+     * @see #xInBounds(int)
+     */
+    public @Nullable T get(int x, int y, int z, boolean useModuloCoords) {
+        return useModuloCoords ? getModuloCoords(x, y, z) : get(x, y, z);
+    }
+
+    /**
      * Same as {@link #get(int, int, int)} but if the result is still {@code null} even with the
      * {@link #setFill(Object) fill}, it will return the provided defaultValue.
      */
