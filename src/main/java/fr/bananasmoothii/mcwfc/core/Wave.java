@@ -112,10 +112,18 @@ public class Wave {
                         z + face.getModZ(),
                         useModuloCoords);
                 if (actualNeighbors == null) continue;
-                if (!actualNeighbors.containsAll(faceEntry.getValue())) { // contains all expected neighbors
-                    isValidPiece = false;
+                final WeightedSet<Piece> expectedNeighbors = faceEntry.getValue();
+                boolean foundValidNeighbor = false;
+                for (Piece actualNeighbor : actualNeighbors) {
+                    if (expectedNeighbors.contains(actualNeighbor)) {
+                        foundValidNeighbor = true;
+                        break;
+                    }
                 }
-                if (!isValidPiece) break;
+                if (!foundValidNeighbor) {
+                    isValidPiece = false;
+                    break;
+                }
                 for (Piece actualNeighbor : actualNeighbors) {
                     @SuppressWarnings("ConstantConditions")
                     final WeightedSet<Piece> neighbors1 =
