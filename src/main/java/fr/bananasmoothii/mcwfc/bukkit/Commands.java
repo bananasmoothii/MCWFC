@@ -9,10 +9,10 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
-import fr.bananasmoothii.mcwfc.core.GeneratingWorld;
 import fr.bananasmoothii.mcwfc.core.MCVirtualSpace;
 import fr.bananasmoothii.mcwfc.core.Piece;
 import fr.bananasmoothii.mcwfc.core.PieceNeighbors;
+import fr.bananasmoothii.mcwfc.core.Wave;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
 import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
@@ -39,12 +39,16 @@ public class Commands extends BaseCommand {
     private static final Map<Player, PieceNeighborsSet> pieceSets = new WeakHashMap<>();
 
     @Subcommand("generate dataset")
-    @Syntax("<sample size> [allow upside down (default: false)]")
-    @CommandCompletion("@range:1-20 true|false")
+    @Syntax("<sample size> [allow upside down (default: false)] [use modulo coords for top and bottom (default: false)]")
+    @CommandCompletion("@range:1-20 true|false true|false")
     @Description("Generates a data set of your current selection. This does NOT modify the world, it just generates a " +
             "data set that you can use later with /mcwfc generate. The \"allow upside down\" parameter specifies if " +
             "you want to have some terrain set sideways and upside-down or not. This command does not support block " +
-            "rotating for now, so expect stairs, chest and other blocs to be in the wrong way.")
+            "rotating for now, so expect stairs, chest and other blocs to be in the wrong way. The parameter \"use " +
+            "modulo coords for top and bottom\" means that when the generator is at the top of this sample (your " +
+            "current selection, should it consider that adding 1 to the y-axis makes it go to the bottom of this " +
+            "selection and vice-versa ? If \"false\", it will be almost impossible to generate something taller than " +
+            "your current selection.")
     public static void generatePieces(final Player player, final String[] args) {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
             if (args.length == 0) {
@@ -66,6 +70,11 @@ public class Commands extends BaseCommand {
                 allowUpsideDown = Boolean.parseBoolean(args[1]);
             }
 
+            boolean useModuloCoordsTopAndBottom = false;
+            if (args.length >= 3) {
+                useModuloCoordsTopAndBottom = Boolean.parseBoolean(args[2]);
+            }
+
 
             final Bounds bounds;
             try {
@@ -85,14 +94,14 @@ public class Commands extends BaseCommand {
                 }
             }
 
-            /*final PieceNeighborsSet dataSet = space.generatePieces(pieceSize, allowUpsideDown);
+            final PieceNeighborsSet dataSet = space.generatePieces(pieceSize, allowUpsideDown, useModuloCoordsTopAndBottom);
             if (dataSet.size() > 0) {
                 pieceSets.put(player, dataSet);
                 sendMessage(player, "§aDone ! Dataset size: " + dataSet.size() + ". You can now run §n/mcwfc " +
                         "generate§a (Don't forget to move your selection if you don't want it to be modified)");
             } else {
                 sendMessage(player, "§eThe dataset is generated, but it is empty so idk what happened");
-            }*/
+            }
         });
     }
 
@@ -126,9 +135,9 @@ public class Commands extends BaseCommand {
             }
 
             final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
-            GeneratingWorld gen = new GeneratingWorld(seed, pieces);
+            Wave wave = new Wave(pieces, bounds);
             final LocalSession playerSession = bukkitPlayer.getSession();
-            gen.onPieceChangeEvent((pieceX, pieceY, pieceZ, piece) ->
+            wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
                     Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
                         int xMin = pieceX * piece.xSize;
                         int yMin = pieceY * piece.ySize;
@@ -148,7 +157,19 @@ public class Commands extends BaseCommand {
                         }
                     }));
             sendMessage(player, "Generating... (this may take a while)");
-            gen.generateWFC(bounds);
+            try {
+                wave.collapse();
+            } catch (Wave.GenerationFailedException e) {
+                sendMessage(player, "§cSorry, the generation failed. This can happen sometimes if your " +
+                        "dataset is too complex. But this happens randomly, so just try again (if you set a seed, make sure " +
+                        "to change it otherwise it will encounter the same problem). If you still get this error, please " +
+                        "try with a less complex dataset, that means a dataset with a low variety (using less different " +
+                        "blocs).");
+            } catch (OutOfMemoryError e) {
+                sendMessage(player, "§cOops, your current selection is too big for this server, because " +
+                        "it just ran out of memory. Please try again with a smaller selection. If you get this error " +
+                        "even with a smaller generation area, this may be a bug.");
+            }
             sendMessage(player, "§aDone with generating !");
         });
     }
