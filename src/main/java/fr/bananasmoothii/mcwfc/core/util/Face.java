@@ -3,6 +3,9 @@ package fr.bananasmoothii.mcwfc.core.util;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Represents the face of a block. This is a very similar copy of {@link org.bukkit.block.BlockFace} but with a few
  * additions, removed of unnessery items and added UP and DOWN variants.
@@ -236,9 +239,9 @@ public enum Face {
         };
     }
 
-    private static final Face[] CARTESIAN_FACES = {NORTH, SOUTH, EAST, WEST, TOP, BOTTOM};
+    private static final List<Face> CARTESIAN_FACES = Arrays.asList(NORTH, SOUTH, EAST, WEST, TOP, BOTTOM);
 
-    public static Face[] getCartesianFaces() {
+    public static List<Face> getCartesianFaces() {
         return CARTESIAN_FACES;
     }
 

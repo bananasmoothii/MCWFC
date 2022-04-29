@@ -123,7 +123,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
         return fill;
     }
 
-    public @Nullable T get(Coords coords) {
+    public @Nullable T get(@NotNull Coords coords) {
         return get(coords.x(), coords.y(), coords.z());
     }
 

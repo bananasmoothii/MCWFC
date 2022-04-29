@@ -3,6 +3,7 @@ package fr.bananasmoothii.mcwfc.core.util;
 import fr.bananasmoothii.mcwfc.core.Piece;
 import fr.bananasmoothii.mcwfc.core.PieceNeighbors;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -22,7 +23,7 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
         return map.size();
     }
 
-    public PieceNeighbors getNeighbors(Piece piece) {
+    public @Nullable PieceNeighbors getNeighbors(Piece piece) {
         return map.get(piece);
     }
 

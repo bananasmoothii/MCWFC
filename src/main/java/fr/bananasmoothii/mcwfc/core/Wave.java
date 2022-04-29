@@ -63,23 +63,26 @@ public class Wave {
                 lastChangedEntropies = null;
                 break;
             }
-            collapse(node.x(), node.y(), node.z());
-            propagateCollapseFrom(node.x(), node.y(), node.z());
+            propagateCollapseFrom(node.x(), node.y(), node.z(), collapse(node.x(), node.y(), node.z()));
         }
     }
 
-    private void collapse(int x, int y, int z) throws GenerationFailedException {
+    /**
+     * @return the collapsed {@link Piece}
+     */
+    private @NotNull Piece collapse(int x, int y, int z) throws GenerationFailedException {
         final WeightedSet<Piece> collapseCandidates = new WeightedSet<>();
         for (Piece piece : Objects.requireNonNull(wave.get(x, y, z, useModuloCoords))) {
-            final PieceNeighbors neighbors = pieces.getNeighbors(piece);
+            final @NotNull PieceNeighbors neighbors = Objects.requireNonNull(pieces.getNeighbors(piece));
             int pieceWeight = 0;
             boolean isValidPiece = true;
             for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : neighbors.getNeighbors().entrySet()) {
+                final Face face = faceEntry.getKey();
                 boolean foundMatchingNeighbors = false;
                 final Set<Piece> actualNeighbors = wave.get(
-                        x + faceEntry.getKey().getModX(),
-                        y + faceEntry.getKey().getModY(),
-                        z + faceEntry.getKey().getModZ(),
+                        x + face.getModX(),
+                        y + face.getModY(),
+                        z + face.getModZ(),
                         useModuloCoords);
                 if (actualNeighbors == null) continue;
                 for (Piece expectedNeighbor : faceEntry.getValue()) {
@@ -93,8 +96,9 @@ public class Wave {
                     break;
                 }
                 for (Piece actualNeighbor : actualNeighbors) {
+                    @SuppressWarnings("ConstantConditions")
                     final int weight = pieces.getNeighbors(actualNeighbor)
-                                    .getNeighbors(faceEntry.getKey().getOppositeFace())
+                                    .getNeighbors(face.getOppositeFace())
                                     .getWeight(piece);
                     if (weight == 0) throw new IllegalStateException("A \"valid\" piece is not recognized by one of its neighbors");
                     pieceWeight += weight;
@@ -110,20 +114,39 @@ public class Wave {
         wave.set(set, x, y, z);
         lastChangedEntropies.push(new ObjectWithCoordinates<>(set, x, y, z));
         pieceCollapsed(x, y, z, collapsed);
+        return collapsed;
     }
 
-    private void propagateCollapseFrom(int x, int y, int z) {
-        propagateCollapse(x - 1, y, z);
-        propagateCollapse(x + 1, y, z);
-        propagateCollapse(x, y - 1, z);
-        propagateCollapse(x, y + 1, z);
-        propagateCollapse(x, y, z - 1);
-        propagateCollapse(x, y, z + 1);
+    private void propagateCollapseFrom(int x, int y, int z, @NotNull Piece collapsed) throws GenerationFailedException {
+        final @NotNull PieceNeighbors neighbors = Objects.requireNonNull(pieces.getNeighbors(collapsed));
+        for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : neighbors.getNeighbors().entrySet()) {
+            final Face face = faceEntry.getKey();
+            propagateCollapse(x + face.getModX(), y + face.getModY(), z + face.getModZ(), faceEntry.getValue());
+        }
     }
 
-    private void propagateCollapse(int x, int y, int z) {
-        if (nodeIsCollapsed(x, y, z)) return;
-        // TODO
+    private void propagateCollapse(int x, int y, int z, Set<Piece> validNeighbors) throws GenerationFailedException {
+        final Set<Piece> actualNeighbors = wave.get(x, y, z, useModuloCoords);
+        if (actualNeighbors == null) return;
+        final int sizeBefore = actualNeighbors.size();
+        if (sizeBefore <= 1) return;
+        // retain only valid neighbors
+        actualNeighbors.retainAll(validNeighbors);
+        if (actualNeighbors.size() == sizeBefore) return; // nothing changed, no need to propagate
+        lastChangedEntropies.push(new ObjectWithCoordinates<>(actualNeighbors, x, y, z));
+        switch (actualNeighbors.size()) {
+            case 0 -> throw new GenerationFailedException("Encountered an impossible state");
+            case 1 -> pieceCollapsed(x, y, z, actualNeighbors.iterator().next());
+        }
+
+        for (Face cartesianFace : Face.getCartesianFaces()) {
+            final Set<Piece> newValidNeighbors = new HashSet<>();
+            for (Piece actualNeighbor : actualNeighbors) {
+                //noinspection ConstantConditions
+                newValidNeighbors.addAll(pieces.getNeighbors(actualNeighbor).getNeighbors(cartesianFace));
+            }
+            propagateCollapse(x + cartesianFace.getModX(), y + cartesianFace.getModY(), z + cartesianFace.getModZ(), newValidNeighbors);
+        }
     }
 
     @SuppressWarnings("ConstantConditions")
