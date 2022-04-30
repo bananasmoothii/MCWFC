@@ -196,7 +196,8 @@ class LittleTests {
                 System.out.println("Collapsing the wave with modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
-                if (wave.hasImpossibleStates()) System.out.println("But it has impossible states...");
+                //assertFalse(wave.hasImpossibleStates(), "The wave has impossible states");
+                if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states");
                 return;
             } catch (Wave.GenerationFailedException e) {
                 System.out.println("The wave has failed to collapse, retrying...");
@@ -217,7 +218,8 @@ class LittleTests {
                 System.out.println("Collapsing the wave without modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
-                if (wave.hasImpossibleStates()) System.out.println("But it has impossible states...");
+                //assertFalse(wave.hasImpossibleStates(), "The wave has impossible states");
+                if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states");
                 return;
             } catch (Wave.GenerationFailedException e) {
                 System.out.println("The wave has failed to collapse, retrying...");

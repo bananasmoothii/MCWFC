@@ -187,23 +187,28 @@ public class Wave {
         final int sizeBefore = present.size();
         final Set<Piece> piecesToRemove = new HashSet<>();
         for (Piece presentPiece : present) {
-            final @NotNull PieceNeighborsPossibilities neighborsForPiece = Objects.requireNonNull(pieces.getNeighborsFor(presentPiece));
-            for (PieceNeighbors neighborPossibility : neighborsForPiece) {
-                boolean neighborPossibilityIsValid = true;
-                for (Map.Entry<Face, Piece> faceEntry : neighborPossibility.entrySet()) {
-                    final Set<Piece> newNodePresentPieces = wave.get(x + faceEntry.getKey().getModX(),
-                            y + faceEntry.getKey().getModY(), z + faceEntry.getKey().getModZ(), useModuloCoords);
-                    if (newNodePresentPieces == null) continue;
-                    if (!newNodePresentPieces.contains(faceEntry.getValue())) {
-                        neighborPossibilityIsValid = false;
-                        break;
+            boolean isValidPiece = true;
+            for (Face face : Face.getCartesianFaces()) {
+                final Set<Piece> neighborsForFace = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
+                if (neighborsForFace == null) continue;
+                boolean foundAcceptingNeighborForFace = false;
+                for (Piece aNeighbor : neighborsForFace) {
+                    final PieceNeighborsPossibilities neighborsOfNeighbor = pieces.getNeighborsFor(aNeighbor);
+                    if (neighborsOfNeighbor == null) continue;
+                    for (PieceNeighbors pieceNeighbors : neighborsOfNeighbor) {
+                        if (pieceNeighbors.get(face).equals(presentPiece)) {
+                            foundAcceptingNeighborForFace = true;
+                            break;
+                        }
                     }
+                    if (foundAcceptingNeighborForFace) break;
                 }
-                if (!neighborPossibilityIsValid) {
-                    piecesToRemove.add(presentPiece);
+                if (!foundAcceptingNeighborForFace) {
+                    isValidPiece = false;
                     break;
                 }
             }
+            if (!isValidPiece) piecesToRemove.add(presentPiece);
         }
         present.removeAll(piecesToRemove);
         if (present.size() == sizeBefore) return; // nothing changed, no need to propagate
