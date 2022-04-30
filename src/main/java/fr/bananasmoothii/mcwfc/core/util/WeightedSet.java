@@ -211,13 +211,11 @@ public class WeightedSet<E> implements Set<E> {
     }
 
     /**
-     * @return the first element given by {@link #iterator()}
-     * @throws IllegalArgumentException if this set is empty
+     * @return the first element given by the iterator
+     * @throws NoSuchElementException if the iterator is empty
      */
-    public E getAny() {
-        final Iterator<E> iterator = iterator();
-        if (!iterator().hasNext()) throw new IllegalStateException("The set is empty");
-        return iterator.next();
+    public E peek() {
+        return map.keySet().iterator().next();
     }
 
     /**

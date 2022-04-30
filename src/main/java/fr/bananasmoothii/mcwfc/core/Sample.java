@@ -1,21 +1,21 @@
-package fr.bananasmoothii.mcwfc.core.util;
+package fr.bananasmoothii.mcwfc.core;
 
-import fr.bananasmoothii.mcwfc.core.Piece;
-import fr.bananasmoothii.mcwfc.core.PieceNeighborsPossibilities;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Deprecated
 public class Sample implements Set<PieceNeighborsPossibilities> {
     private final Map<Piece, PieceNeighborsPossibilities> map = new HashMap<>();
 
     public Sample() {
     }
 
-    public Sample(Collection<? extends PieceNeighborsPossibilities> c) {
-        addAll(c);
+    public Sample(@Nullable Collection<? extends PieceNeighborsPossibilities> from) {
+        if (from != null)
+            addAll(from);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class Sample implements Set<PieceNeighborsPossibilities> {
                     PieceNeighborsPossibilities merged = new PieceNeighborsPossibilities(p1);
                     merged.addAll(p2);
                     return merged;
-                }) != pieceNeighborsPossibilities;
+                })  != pieceNeighborsPossibilities;
     }
 
     @Override

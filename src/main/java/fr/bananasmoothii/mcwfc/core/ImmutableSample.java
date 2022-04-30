@@ -1,12 +1,12 @@
-package fr.bananasmoothii.mcwfc.core.util;
+package fr.bananasmoothii.mcwfc.core;
 
-import fr.bananasmoothii.mcwfc.core.PieceNeighborsPossibilities;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Iterator;
 
+@Deprecated
 public class ImmutableSample extends Sample {
 
     public ImmutableSample(@NotNull Sample c) {

@@ -3,7 +3,6 @@ package fr.bananasmoothii.mcwfc;
 import fr.bananasmoothii.mcwfc.core.*;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
-import fr.bananasmoothii.mcwfc.core.util.Sample;
 import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static fr.bananasmoothii.mcwfc.BlockDataImpl.AIR;
@@ -182,17 +182,25 @@ class LittleTests {
         System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
     }
 
-    private static Sample pieceSet;
-
     @Test
     @Order(9)
+    void getCenterPieces() {
+        if (pieceSet == null) generatePieces();
+        assertTimeout(Duration.ofMillis(900), () -> {
+            pieceSet.getCenterPieces();
+        });
+    }
+
+    private static Sample1 pieceSet;
+
+    @Test
+    @Order(10)
     void waveFunctionCollapse() {
         if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
-        Piece defaultPiece = new Piece(2, 2, 2, AIR);
         for (int i = 0; i < 4; i++) {
             try {
-                Wave wave = new Wave(pieceSet, bounds, defaultPiece);
+                Wave wave = new Wave(pieceSet, bounds, null);
                 System.out.println("Collapsing the wave with modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
@@ -201,20 +209,20 @@ class LittleTests {
                 return;
             } catch (Wave.GenerationFailedException e) {
                 System.out.println("The wave has failed to collapse, retrying...");
+                e.printStackTrace();
             }
         }
         fail("The wave has failed to collapse after 4 attempts");
     }
 
     @Test
-    @Order(10)
+    @Order(11)
     void waveFunctionCollapseWithoutModuloCoords() {
         if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
-        Piece defaultPiece = new Piece(2, 2, 2, AIR);
         for (int i = 0; i < 4; i++) {
             try {
-                Wave wave = new Wave(pieceSet, bounds, defaultPiece, false);
+                Wave wave = new Wave(pieceSet, bounds, null, false);
                 System.out.println("Collapsing the wave without modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
@@ -223,13 +231,14 @@ class LittleTests {
                 return;
             } catch (Wave.GenerationFailedException e) {
                 System.out.println("The wave has failed to collapse, retrying...");
+                e.printStackTrace();
             }
         }
         fail("The wave has failed to collapse after 4 attempts");
     }
 
     @Test
-    @Order(11)
+    @Order(12)
     void gcd() {
         assertEquals(8, WeightedSet.gcd(8, 32));
         assertEquals(1, WeightedSet.gcd(8, 33));

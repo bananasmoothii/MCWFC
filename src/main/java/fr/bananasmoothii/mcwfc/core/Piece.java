@@ -13,8 +13,9 @@ import java.util.Set;
 import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.log;
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
-public class Piece {
+public class Piece/*<B>*/ {
 
+    // TODO: change BlockData to B
     private final @NotNull BlockData[][] @NotNull[] data;
     public final int xSize, ySize, zSize;
 

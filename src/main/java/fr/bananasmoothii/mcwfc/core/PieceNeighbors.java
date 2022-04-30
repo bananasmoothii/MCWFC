@@ -15,6 +15,7 @@ import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 /**
  * Represents the neighbors of a piece. It does not contain the centerpiece. It may only have zero or one neighbor per face.
  */
+@Deprecated
 public class PieceNeighbors extends HashMap<Face, Piece> {
 
     public PieceNeighbors() {

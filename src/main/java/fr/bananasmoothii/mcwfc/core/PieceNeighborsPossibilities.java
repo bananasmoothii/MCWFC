@@ -11,6 +11,7 @@ import java.util.Set;
 
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
+@Deprecated
 public class PieceNeighborsPossibilities extends WeightedSet<PieceNeighbors> {
 
     private final @NotNull Piece centerPiece;
