@@ -129,13 +129,16 @@ class LittleTests {
     void pieceNeighborsSiblings() {
         PieceNeighborsPossibilities piece;
         Set<@NotNull PieceNeighborsPossibilities> pieces;
-        PieceNeighborsPossibilities piece0 = new PieceNeighborsPossibilities(new Piece(2, 3, 4, AIR));
-        piece0.getCenterPiece().set(STONE, 0, 0, 0);
-        piece0.getCenterPiece().set(STONE, 0, 1, 3);
-        piece0.addNeighbor(Face.TOP, piece0.getCenterPiece());
-        piece0.addNeighbor(Face.SOUTH_EAST_TOP, piece0.getCenterPiece());
+        Piece center = new Piece(2, 3, 4, AIR);
+        center.set(STONE, 0, 0, 0);
+        center.set(STONE, 0, 1, 3);
+        PieceNeighbors neighbors = new PieceNeighbors();
+        neighbors.put(Face.TOP, center);
+        neighbors.put(Face.SOUTH_EAST_TOP, center);
+        PieceNeighborsPossibilities piece0 = new PieceNeighborsPossibilities(center);
+        piece0.add(neighbors);
 
-        piece = piece0.copy();
+        piece = new PieceNeighborsPossibilities(piece0);
         pieces = piece.generateSiblings(true);
         assertEquals(48, pieces.size());
         assertEquals(8, piece.generateSiblings(false).size());
