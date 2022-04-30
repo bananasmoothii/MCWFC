@@ -206,7 +206,7 @@ class LittleTests {
     }
 
     @Test
-    @Order(10)
+    @Order(11)
     void waveFunctionCollapse() {
         if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
@@ -228,7 +228,7 @@ class LittleTests {
     }
 
     @Test
-    @Order(11)
+    @Order(12)
     void waveFunctionCollapseWithoutModuloCoords() {
         if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
@@ -250,7 +250,7 @@ class LittleTests {
     }
 
     @Test
-    @Order(12)
+    @Order(13)
     void gcd() {
         assertEquals(8, WeightedSet.gcd(8, 32));
         assertEquals(1, WeightedSet.gcd(8, 33));

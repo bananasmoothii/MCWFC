@@ -1,6 +1,7 @@
 package fr.bananasmoothii.mcwfc.core;
 
 import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
@@ -31,6 +32,7 @@ public class Sample1 extends WeightedSet<PieceNeighbors1> {
     /**
      * @return all centerpieces of all {@link PieceNeighbors1}
      */
+    @Contract(pure = true)
     public @NotNull WeightedSet<Piece> getCenterPieces() {
         WeightedSet<Piece> result = new WeightedSet<>();
         final Iterator<Map.Entry<PieceNeighbors1, Integer>> iter = elementsAndWeightsIterator();
@@ -41,9 +43,10 @@ public class Sample1 extends WeightedSet<PieceNeighbors1> {
         return result;
     }
 
+    @Contract(pure = true)
     public boolean centerPiecesContains(Piece piece) {
         for (PieceNeighbors1 pieceNeighbors : this) {
-            if (pieceNeighbors.getCenterPiece() == piece) {
+            if (pieceNeighbors.getCenterPiece().equals(piece)) {
                 return true;
             }
         }
