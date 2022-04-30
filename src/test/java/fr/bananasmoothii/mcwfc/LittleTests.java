@@ -3,7 +3,7 @@ package fr.bananasmoothii.mcwfc;
 import fr.bananasmoothii.mcwfc.core.*;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
-import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
+import fr.bananasmoothii.mcwfc.core.util.Sample;
 import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
@@ -127,9 +127,9 @@ class LittleTests {
     @Test
     @Order(6)
     void pieceNeighborsSiblings() {
-        PieceNeighbors piece;
-        Set<@NotNull PieceNeighbors> pieces;
-        PieceNeighbors piece0 = new PieceNeighbors(new Piece(2, 3, 4, AIR));
+        PieceNeighborsPossibilities piece;
+        Set<@NotNull PieceNeighborsPossibilities> pieces;
+        PieceNeighborsPossibilities piece0 = new PieceNeighborsPossibilities(new Piece(2, 3, 4, AIR));
         piece0.getCenterPiece().set(STONE, 0, 0, 0);
         piece0.getCenterPiece().set(STONE, 0, 1, 3);
         piece0.addNeighbor(Face.TOP, piece0.getCenterPiece());
@@ -179,7 +179,7 @@ class LittleTests {
         System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
     }
 
-    private static PieceNeighborsSet pieceSet;
+    private static Sample pieceSet;
 
     @Test
     @Order(9)

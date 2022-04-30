@@ -12,7 +12,7 @@ import java.util.Objects;
 /**
  * A {@link VirtualSpace} with minecraft blocks ({@link BlockData}. It provides some useful methods, mainly to generate
  * {@link Piece}s. This implementation does not allow {@code null} fills (see {@link VirtualSpace#setFill(Object)}.
- * @see #generatePieces(int, boolean)
+ * @see #generatePieces(int, boolean, boolean)
  */
 @SuppressWarnings("NullableProblems")
 public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
@@ -42,10 +42,10 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      * Generates and reduces pieces along with their neighbors. This doesn't generate any edge or corner neighbors, only
      * cartesian faces as in {@link Face#isCartesian()}. This method doesn't allow putting pieces upside down.
      * @param pieceSize the size of each {@link Piece} in x, y and z directions
-     * @return a {@link WeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
+     * @return a {@link WeightedSet}<{@link PieceNeighborsPossibilities}>, the weight represents the number of times a piece was seen.
      * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
-    public PieceNeighborsSet generatePieces(final int pieceSize) {
+    public Sample generatePieces(final int pieceSize) {
         return generatePieces(pieceSize, false, true);
     }
 
@@ -59,26 +59,28 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      *                             adding 1 to the y-axis makes it go to the bottom of this {@link MCVirtualSpace} and
      *                             vice-versa ({@code true}), or not ({code false}) ? If {@code false}, it will be almost
      *                             impossible to generate something higher in the {@link Wave}
-     * @return a {@link WeightedSet}<{@link PieceNeighbors}>, the weight represents the number of times a piece was seen.
+     * @return a {@link WeightedSet}<{@link PieceNeighborsPossibilities}>, the weight represents the number of times a piece was seen.
      * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
-    public PieceNeighborsSet generatePieces(final int pieceSize, final boolean allowUpsideDown,
-                                            final boolean useModuloCoordsTopAndBottom) {
-        PieceNeighborsSet result = new PieceNeighborsSet();
+    public Sample generatePieces(final int pieceSize, final boolean allowUpsideDown,
+                                 final boolean useModuloCoordsTopAndBottom) {
+        Sample result = new Sample();
         HashMap<Coords, Piece> piecesCache = new HashMap<>(); // used to keep the same reference for pieces with the exact same coords
         for (int x = xMin(); x <= xMax(); x++) {
             for (int y = yMin(); y <= yMax(); y++) {
                 for (int z = zMin(); z <= zMax(); z++) {
+                    PieceNeighbors pieceNeighbors = new PieceNeighbors();
+                    pieceNeighbors.put(Face.TOP, getPieceAt(new Coords(x, y + pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
+                    pieceNeighbors.put(Face.BOTTOM, getPieceAt(new Coords(x, y - pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
+                    pieceNeighbors.put(Face.WEST, getPieceAt(new Coords(x - pieceSize, y, z), pieceSize, true, piecesCache));
+                    pieceNeighbors.put(Face.EAST, getPieceAt(new Coords(x + pieceSize, y, z), pieceSize, true, piecesCache));
+                    pieceNeighbors.put(Face.NORTH, getPieceAt(new Coords(x, y, z - pieceSize), pieceSize, true, piecesCache));
+                    pieceNeighbors.put(Face.SOUTH, getPieceAt(new Coords(x, y, z + pieceSize), pieceSize, true, piecesCache));
                     @SuppressWarnings("ConstantConditions") // useModuloCoords is true
-                    PieceNeighbors pieceNeighbors = new PieceNeighbors(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
-                    pieceNeighbors.addNeighbor(Face.TOP, getPieceAt(new Coords(x, y + pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
-                    pieceNeighbors.addNeighbor(Face.BOTTOM, getPieceAt(new Coords(x, y - pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
-                    pieceNeighbors.addNeighbor(Face.WEST, getPieceAt(new Coords(x - pieceSize, y, z), pieceSize, true, piecesCache));
-                    pieceNeighbors.addNeighbor(Face.EAST, getPieceAt(new Coords(x + pieceSize, y, z), pieceSize, true, piecesCache));
-                    pieceNeighbors.addNeighbor(Face.NORTH, getPieceAt(new Coords(x, y, z - pieceSize), pieceSize, true, piecesCache));
-                    pieceNeighbors.addNeighbor(Face.SOUTH, getPieceAt(new Coords(x, y, z + pieceSize), pieceSize, true, piecesCache));
+                    PieceNeighborsPossibilities pieceNeighborsPossibilities = new PieceNeighborsPossibilities(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
+                    pieceNeighborsPossibilities.add(pieceNeighbors);
                     // add 1 to the weight if that sibling already exists, else put it in the map with a weight of 1
-                    result.addAll(pieceNeighbors.generateSiblings(allowUpsideDown));
+                    result.addAll(pieceNeighborsPossibilities.generateSiblings(allowUpsideDown));
                 }
             }
         }

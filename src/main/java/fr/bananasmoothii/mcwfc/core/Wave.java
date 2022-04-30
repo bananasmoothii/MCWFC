@@ -12,7 +12,7 @@ import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.log;
 
 public class Wave {
     private final VirtualSpace<Set<Piece>> wave;
-    private final ImmutablePieceNeighborsSet pieces;
+    private final ImmutableSample pieces;
     private final long seed;
     private final @Nullable Piece defaultPiece;
     private final List<@NotNull PieceCollapseListener> pieceCollapseListeners = new ArrayList<>();
@@ -20,11 +20,11 @@ public class Wave {
     private boolean isCollapsed = false;
     private boolean hasImpossibleStates = false;
 
-    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, @Nullable Piece defaultPiece) {
+    public Wave(@NotNull Sample pieces, @NotNull Bounds bounds, @Nullable Piece defaultPiece) {
         this(pieces, bounds, defaultPiece, true);
     }
 
-    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, @Nullable Piece defaultPiece, boolean useModuloCoords) {
+    public Wave(@NotNull Sample pieces, @NotNull Bounds bounds, @Nullable Piece defaultPiece, boolean useModuloCoords) {
         this(pieces, bounds, defaultPiece, useModuloCoords, ThreadLocalRandom.current().nextLong());
     }
 
@@ -32,11 +32,11 @@ public class Wave {
      * @param defaultPiece if not null, instead of throwing a {@link GenerationFailedException} when there is a piece
      *                     with an entropy of 0, it will be replaced by this piece.
      */
-    public Wave(@NotNull PieceNeighborsSet pieces, @NotNull Bounds bounds, @Nullable Piece defaultPiece, boolean useModuloCoords, long seed) {
+    public Wave(@NotNull Sample pieces, @NotNull Bounds bounds, @Nullable Piece defaultPiece, boolean useModuloCoords, long seed) {
         wave = new VirtualSpace<>(bounds);
         this.pieces = pieces.immutable();
         this.defaultPiece = defaultPiece;
-        int pieceSize = pieces.getAny().getCenterPiece().xSize; // assuming all pieces are cubic
+        int pieceSize = pieces.peek().getCenterPiece().xSize; // assuming all pieces are cubic
         if (defaultPiece != null && (defaultPiece.xSize != pieceSize || defaultPiece.ySize != pieceSize
                 || defaultPiece.zSize != pieceSize)) {
             throw new IllegalArgumentException("Default piece must have the same size as the others");
@@ -101,10 +101,33 @@ public class Wave {
     private @NotNull Piece collapse(int x, int y, int z) throws GenerationFailedException {
         final WeightedSet<Piece> collapseCandidates = new WeightedSet<>();
         for (Piece piece : Objects.requireNonNull(wave.get(x, y, z, useModuloCoords))) {
-            final @NotNull PieceNeighbors neighbors = Objects.requireNonNull(pieces.getNeighbors(piece));
+            final @NotNull PieceNeighborsPossibilities expectedNeighbors = Objects.requireNonNull(pieces.getNeighborsFor(piece));
+            boolean isValidPiece = false;
             int pieceWeight = 0;
-            boolean isValidPiece = true;
-            for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : neighbors.getNeighbors().entrySet()) {
+            for (PieceNeighbors expectedNeighbor : expectedNeighbors) {
+                boolean expectedNeighborIsValid = true;
+                for (Map.Entry<Face, Piece> faceEntry : expectedNeighbor.entrySet()) {
+                    final Face face = faceEntry.getKey();
+                    final Piece expectedNeighborForFace = faceEntry.getValue();
+                    final Set<Piece> actualNeighbors = wave.get(
+                            x + face.getModX(),
+                            y + face.getModY(),
+                            z + face.getModZ(),
+                            useModuloCoords);
+                    if (actualNeighbors == null) continue;
+                    if (!actualNeighbors.contains(expectedNeighborForFace)) {
+                        expectedNeighborIsValid = false;
+                        break;
+                    }
+                }
+                if (expectedNeighborIsValid) {
+                    isValidPiece = true;
+                    pieceWeight += expectedNeighbors.getWeight(expectedNeighbor);
+                    // not break, because we want to count the weight of all valid pieces
+                }
+            }
+            /*
+            for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : expectedNeighbors.getNeighbors().entrySet()) {
                 final Face face = faceEntry.getKey();
                 final Set<Piece> actualNeighbors = wave.get(
                         x + face.getModX(),
@@ -112,10 +135,10 @@ public class Wave {
                         z + face.getModZ(),
                         useModuloCoords);
                 if (actualNeighbors == null) continue;
-                final WeightedSet<Piece> expectedNeighbors = faceEntry.getValue();
+                final WeightedSet<Piece> expectedNeighbors1 = faceEntry.getValue();
                 boolean foundValidNeighbor = false;
                 for (Piece actualNeighbor : actualNeighbors) {
-                    if (expectedNeighbors.contains(actualNeighbor)) {
+                    if (expectedNeighbors1.contains(actualNeighbor)) {
                         foundValidNeighbor = true;
                         break;
                     }
@@ -124,15 +147,8 @@ public class Wave {
                     isValidPiece = false;
                     break;
                 }
-                for (Piece actualNeighbor : actualNeighbors) {
-                    @SuppressWarnings("ConstantConditions")
-                    final WeightedSet<Piece> neighbors1 =
-                            pieces.getNeighbors(actualNeighbor).getNeighbors(face.getOppositeFace());
-                    if (neighbors1 == null) continue;
-                    pieceWeight += neighbors1.getWeight(piece);
-                }
-                if (pieceWeight == 0) throw new IllegalStateException("A \"valid\" piece is not recognized by its neighbors");
             }
+            */
             if (isValidPiece) {
                 collapseCandidates.add(piece, pieceWeight);
             }
@@ -144,7 +160,7 @@ public class Wave {
             else collapsed = defaultPiece;
         } else
             collapsed = Objects.requireNonNull(collapseCandidates.weightedChoose(), "weightedChoose() returned null");
-        final SingleElementSet<Piece> set = new SingleElementSet<>(collapsed);
+        final Set<Piece> set = Collections.singleton(collapsed);
         wave.set(set, x, y, z, useModuloCoords);
         lastChangedEntropies.push(new ObjectWithCoordinates<>(set, x, y, z));
         pieceCollapsed(x, y, z, collapsed);
@@ -152,14 +168,17 @@ public class Wave {
     }
 
     private void propagateCollapseFrom(int x, int y, int z, @NotNull Piece collapsed) throws GenerationFailedException {
-        final @NotNull PieceNeighbors neighbors = Objects.requireNonNull(pieces.getNeighbors(collapsed));
-        for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : neighbors.getNeighbors().entrySet()) {
-            final Face face = faceEntry.getKey();
-            propagateCollapse(x + face.getModX(), y + face.getModY(), z + face.getModZ(), faceEntry.getValue());
+        final @NotNull PieceNeighborsPossibilities neighbors = Objects.requireNonNull(pieces.getNeighborsFor(collapsed));
+        for (Face cartesianFace : Face.getCartesianFaces()) {
+            final Set<Piece> validPieces = new HashSet<>();
+            for (PieceNeighbors neighborPossibility : neighbors) {
+                validPieces.add(neighborPossibility.get(cartesianFace));
+            }
+            propagateCollapse(x + cartesianFace.getModX(), y + cartesianFace.getModY(), z + cartesianFace.getModZ(), validPieces);
         }
     }
 
-    private void propagateCollapse(int x, int y, int z, Set<Piece> validNeighbors) throws GenerationFailedException {
+    private void propagateCollapse(int x, int y, int z, @NotNull Set<Piece> validNeighbors) throws GenerationFailedException {
         // not using modulo coords here otherwise actualNeighbor will never be null and the loop will never end
         final Set<Piece> actualNeighbors = wave.getWithoutFill(x, y, z);
         if (actualNeighbors == null) return;
@@ -174,19 +193,21 @@ public class Wave {
                 hasImpossibleStates = true;
                 if (defaultPiece == null) throw new GenerationFailedException("Encountered an impossible state");
                 else pieceCollapsed(x, y, z, defaultPiece);
-            } case 1 -> pieceCollapsed(x, y, z, actualNeighbors.iterator().next());
+            }
+            case 1 -> pieceCollapsed(x, y, z, actualNeighbors.iterator().next());
         }
 
         for (Face cartesianFace : Face.getCartesianFaces()) {
             final Set<Piece> newValidNeighbors = new HashSet<>();
             for (Piece actualNeighbor : actualNeighbors) {
-                //noinspection ConstantConditions
-                final WeightedSet<Piece> neighbors = pieces.getNeighbors(actualNeighbor).getNeighbors(cartesianFace);
-                if (neighbors == null) {
-                    log.warning("neighbors == null");
+                final PieceNeighborsPossibilities neighborPossibilitiesOfNeighbors = pieces.getNeighborsFor(actualNeighbor);
+                if (neighborPossibilitiesOfNeighbors == null) {
+                    log.warning("neighborPossibilitiesOfNeighbors == null");
                     continue;
                 }
-                newValidNeighbors.addAll(neighbors);
+                for (PieceNeighbors neighborPossibility : neighborPossibilitiesOfNeighbors) {
+                    newValidNeighbors.add(neighborPossibility.get(cartesianFace));
+                }
             }
             propagateCollapse(x + cartesianFace.getModX(), y + cartesianFace.getModY(), z + cartesianFace.getModZ(), newValidNeighbors);
         }
@@ -225,7 +246,8 @@ public class Wave {
             final Set<Piece> object = node.object();
             if (!totalSearch) {
                 // using last changed entropies, that means some entropies might be wrong
-                if (Objects.requireNonNull(wave.get(node.coords())).size() <= 1) continue;
+                //noinspection ConstantConditions
+                if (wave.get(node.coords()).size() <= 1) continue;
             }
             if (1 < object.size() && object.size() < lowestEntropy) {
                 lowestEntropy = object.size();

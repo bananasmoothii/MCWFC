@@ -12,8 +12,7 @@ import com.sk89q.worldedit.regions.Region;
 import fr.bananasmoothii.mcwfc.core.*;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
-import fr.bananasmoothii.mcwfc.core.util.PieceNeighborsSet;
-import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
+import fr.bananasmoothii.mcwfc.core.util.Sample;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -34,8 +33,8 @@ import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.sendMessage;
 @CommandAlias("mcwfc")
 @CommandPermission("mcwfc.use")
 public class Commands extends BaseCommand {
-    private static final Map<Player, PieceNeighborsSet> pieceSets = new WeakHashMap<>();
-    private static final boolean INCREMENTAL_GENERATION = true;
+    private static final Map<Player, Sample> pieceSets = new WeakHashMap<>();
+    private static final boolean INCREMENTAL_GENERATION = false; // CAUTION: very laggy
 
     @Subcommand("generate dataset")
     @Syntax("<sample size> [allow upside down (default: false)] [use modulo coords for top and bottom (default: false)]")
@@ -93,7 +92,7 @@ public class Commands extends BaseCommand {
                 }
             }
 
-            final PieceNeighborsSet dataSet = space.generatePieces(pieceSize, allowUpsideDown, useModuloCoordsTopAndBottom);
+            final Sample dataSet = space.generatePieces(pieceSize, allowUpsideDown, useModuloCoordsTopAndBottom);
             if (dataSet.size() > 0) {
                 pieceSets.put(player, dataSet);
                 sendMessage(player, "§aDone ! Dataset size: " + dataSet.size() + ". You can now run §n/mcwfc " +
@@ -113,7 +112,7 @@ public class Commands extends BaseCommand {
     @CommandCompletion("@nothing")
     public static void generate(Player player, String[] args) {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
-            PieceNeighborsSet pieces = pieceSets.get(player);
+            Sample pieces = pieceSets.get(player);
             if (pieces == null) {
                 sendMessage(player, "§eYou have currently no piece set. You can generate one with /mcwfc generate " +
                         "dataset");
@@ -219,7 +218,7 @@ public class Commands extends BaseCommand {
     @Syntax("<piece number>")
     @CommandCompletion("@range:0-10")
     public static void dumpPiece(Player player, int pieceNumber) {
-        final PieceNeighborsSet dataSet = pieceSets.get(player);
+        final Sample dataSet = pieceSets.get(player);
         if (dataSet == null) {
             sendMessage(player, "§eYou have currently no piece set. You can generate one with /mcwfc generate " +
                     "dataset");
@@ -229,11 +228,11 @@ public class Commands extends BaseCommand {
             sendMessage(player, "§cPiece number is too high. Try a number between 0 and " + (dataSet.size() - 1));
             return;
         }
-        final Iterator<PieceNeighbors> iter = dataSet.iterator();
+        final Iterator<PieceNeighborsPossibilities> iter = dataSet.iterator();
         for (int i = 0; i < pieceNumber; i++) {
             iter.next();
         }
-        final PieceNeighbors piece = iter.next();
+        final PieceNeighborsPossibilities piece = iter.next();
         final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
         final LocalSession playerSession = bukkitPlayer.getSession();
         final Location playerLocation = player.getLocation();
@@ -243,9 +242,10 @@ public class Commands extends BaseCommand {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
             try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc dumppiece")) {
                 placePiece(piece.getCenterPiece(), editSession, playerX, playerY, playerZ);
-                for (Map.Entry<Face, WeightedSet<Piece>> faceEntry : piece.getNeighbors().entrySet()) {
+                final PieceNeighbors chosen = piece.weightedChoose();
+                for (Map.Entry<Face, Piece> faceEntry : chosen.entrySet()) {
                     final Face face = faceEntry.getKey();
-                    placePiece(faceEntry.getValue().weightedChoose(), editSession,
+                    placePiece(faceEntry.getValue(), editSession,
                             playerX + face.getModX(), playerY + face.getModY(), playerZ + face.getModZ());
                 }
                 playerSession.remember(editSession);

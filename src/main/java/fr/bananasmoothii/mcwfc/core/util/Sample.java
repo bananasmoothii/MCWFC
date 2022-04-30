@@ -1,20 +1,20 @@
 package fr.bananasmoothii.mcwfc.core.util;
 
 import fr.bananasmoothii.mcwfc.core.Piece;
-import fr.bananasmoothii.mcwfc.core.PieceNeighbors;
+import fr.bananasmoothii.mcwfc.core.PieceNeighborsPossibilities;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class PieceNeighborsSet implements Set<PieceNeighbors> {
-    private final Map<Piece, PieceNeighbors> map = new HashMap<>();
+public class Sample implements Set<PieceNeighborsPossibilities> {
+    private final Map<Piece, PieceNeighborsPossibilities> map = new HashMap<>();
 
-    public PieceNeighborsSet() {
+    public Sample() {
     }
 
-    public PieceNeighborsSet(Collection<? extends PieceNeighbors> c) {
+    public Sample(Collection<? extends PieceNeighborsPossibilities> c) {
         addAll(c);
     }
 
@@ -23,7 +23,7 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
         return map.size();
     }
 
-    public @Nullable PieceNeighbors getNeighbors(Piece piece) {
+    public @Nullable PieceNeighborsPossibilities getNeighborsFor(Piece piece) {
         return map.get(piece);
     }
 
@@ -34,26 +34,21 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
 
     @Override
     public boolean contains(Object o) {
-        if (o instanceof PieceNeighbors pieceNeighbors)
-            return map.containsValue(pieceNeighbors);
+        if (o instanceof PieceNeighborsPossibilities pieceNeighborsPossibilities)
+            return map.containsValue(pieceNeighborsPossibilities);
         return false;
     }
 
     @NotNull
     @Override
-    public Iterator<PieceNeighbors> iterator() {
+    public Iterator<PieceNeighborsPossibilities> iterator() {
         return map.values().iterator();
     }
 
     @NotNull
     @Override
-    public PieceNeighbors @NotNull [] toArray() {
-        PieceNeighbors[] array = new PieceNeighbors[map.size()];
-        int i = 0;
-        for (PieceNeighbors value : map.values()) {
-            array[i++] = value;
-        }
-        return array;
+    public PieceNeighborsPossibilities @NotNull [] toArray() {
+        return map.values().toArray(new PieceNeighborsPossibilities[0]);
     }
 
     /**
@@ -67,24 +62,15 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
         return (T[]) toArray();
     }
 
-    /**
-     * Always returns {@code true}
-     */
     @Override
-    public boolean add(@NotNull PieceNeighbors pieceNeighbors) {
-        PieceNeighbors inMap = map.get(pieceNeighbors.getCenterPiece());
-        if (inMap == null) {
-            map.put(pieceNeighbors.getCenterPiece(), pieceNeighbors);
-        } else {
-            inMap.addNeighborsOf(pieceNeighbors);
-        }
-        return true;
+    public boolean add(@NotNull PieceNeighborsPossibilities pieceNeighborsPossibilities) {
+        return map.put(pieceNeighborsPossibilities.getCenterPiece(), pieceNeighborsPossibilities) != pieceNeighborsPossibilities;
     }
 
     @Override
     public boolean remove(Object o) {
-        if (o instanceof PieceNeighbors pieceNeighbors)
-            return map.remove(pieceNeighbors.getCenterPiece(), pieceNeighbors);
+        if (o instanceof PieceNeighborsPossibilities pieceNeighborsPossibilities)
+            return map.remove(pieceNeighborsPossibilities.getCenterPiece(), pieceNeighborsPossibilities);
         return false;
     }
 
@@ -94,11 +80,12 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
     }
 
     @Override
-    public boolean addAll(@NotNull Collection<? extends PieceNeighbors> c) {
-        for (PieceNeighbors pieceNeighbors : c) {
-            add(pieceNeighbors);
+    public boolean addAll(@NotNull Collection<? extends PieceNeighborsPossibilities> c) {
+        boolean addedAll = true;
+        for (PieceNeighborsPossibilities pieceNeighborsPossibilities : c) {
+            if (!add(pieceNeighborsPossibilities)) addedAll = false;
         }
-        return true;
+        return addedAll;
     }
 
     @Override
@@ -129,8 +116,8 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof PieceNeighborsSet pieceNeighbors)
-            return map.equals(pieceNeighbors.map);
+        if (o instanceof Sample sample)
+            return map.equals(sample.map);
         return false;
     }
 
@@ -139,8 +126,8 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
         return map.hashCode();
     }
 
-    public PieceNeighbors getAny() {
-        final Iterator<PieceNeighbors> iterator = iterator();
+    public PieceNeighborsPossibilities peek() {
+        final Iterator<PieceNeighborsPossibilities> iterator = iterator();
         if (!iterator().hasNext()) throw new IllegalArgumentException("The set is empty");
         return iterator.next();
     }
@@ -149,14 +136,14 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
         return new HashSet<>(map.keySet());
     }
 
-    public PieceNeighbors chooseRandom() {
+    public PieceNeighborsPossibilities chooseRandom() {
         return chooseRandom(ThreadLocalRandom.current());
     }
 
-    public PieceNeighbors chooseRandom(Random random) {
+    public PieceNeighborsPossibilities chooseRandom(Random random) {
         if (isEmpty()) throw new IllegalArgumentException("The set is empty");
         int randomIndex = random.nextInt(map.size());
-        final Iterator<PieceNeighbors> iter = iterator();
+        final Iterator<PieceNeighborsPossibilities> iter = iterator();
         for (int i = 0; i < randomIndex; i++) {
             iter.next();
         }
@@ -164,15 +151,15 @@ public class PieceNeighborsSet implements Set<PieceNeighbors> {
     }
 
     /**
-     * Simplifies the coefficients for each {@link PieceNeighbors}. This method just calls {@link PieceNeighbors#simplify()},
+     * Simplifies the coefficients for each {@link PieceNeighborsPossibilities}. This method just calls {@link PieceNeighborsPossibilities#simplify()},
      * but be aware because that can be a time-consuming task.
-     * @see PieceNeighbors#simplify()
+     * @see PieceNeighborsPossibilities#simplify()
      */
     public void simplify() {
-        forEach(PieceNeighbors::simplify);
+        forEach(PieceNeighborsPossibilities::simplify);
     }
 
-    public @NotNull ImmutablePieceNeighborsSet immutable() {
-        return new ImmutablePieceNeighborsSet(this);
+    public @NotNull ImmutableSample immutable() {
+        return new ImmutableSample(this);
     }
 }

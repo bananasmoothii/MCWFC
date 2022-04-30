@@ -1,7 +1,6 @@
 package fr.bananasmoothii.mcwfc.core.util;
 
 import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.Debug;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,7 +12,6 @@ import java.util.function.Function;
 /**
  * A Set where each element have a weight. The default weight is 1.
  */
-@Debug.Renderer(childrenArray = "List a = new ArrayList(this.size()); a.addAll(this); return a.toArray();")
 public class WeightedSet<E> implements Set<E> {
 
     private final Map<E, Integer> map = new HashMap<>();
@@ -50,6 +48,12 @@ public class WeightedSet<E> implements Set<E> {
         return map.keySet().iterator();
     }
 
+    /*
+    @SuppressWarnings("unused") // is used in debugger
+    public Object[] toSimpleArray() {
+        return map.keySet().toArray();
+    }
+
     @NotNull
     @Override
     public Object @NotNull [] toArray() {
@@ -81,6 +85,20 @@ public class WeightedSet<E> implements Set<E> {
             }
         }
         return array;
+    }
+
+     */
+
+    @NotNull
+    @Override
+    public Object[] toArray() {
+        return map.keySet().toArray();
+    }
+
+    @NotNull
+    @Override
+    public <T> T[] toArray(@NotNull T[] a) {
+        return map.keySet().toArray(a);
     }
 
     @Override
