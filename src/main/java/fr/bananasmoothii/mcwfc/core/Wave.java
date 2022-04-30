@@ -160,7 +160,8 @@ public class Wave {
             else collapsed = defaultPiece;
         } else
             collapsed = Objects.requireNonNull(collapseCandidates.weightedChoose(), "weightedChoose() returned null");
-        final Set<Piece> set = Collections.singleton(collapsed);
+        final Set<Piece> set = new HashSet<>();
+        set.add(collapsed);
         wave.set(set, x, y, z, useModuloCoords);
         lastChangedEntropies.push(new ObjectWithCoordinates<>(set, x, y, z));
         pieceCollapsed(x, y, z, collapsed);
@@ -168,13 +169,54 @@ public class Wave {
     }
 
     private void propagateCollapseFrom(int x, int y, int z, @NotNull Piece collapsed) throws GenerationFailedException {
-        final @NotNull PieceNeighborsPossibilities neighbors = Objects.requireNonNull(pieces.getNeighborsFor(collapsed));
+        //final @NotNull PieceNeighborsPossibilities neighbors = Objects.requireNonNull(pieces.getNeighborsFor(collapsed));
         for (Face cartesianFace : Face.getCartesianFaces()) {
+            /*
             final Set<Piece> validPieces = new HashSet<>();
             for (PieceNeighbors neighborPossibility : neighbors) {
                 validPieces.add(neighborPossibility.get(cartesianFace));
             }
-            propagateCollapse(x + cartesianFace.getModX(), y + cartesianFace.getModY(), z + cartesianFace.getModZ(), validPieces);
+             */
+            propagateCollapseTo(x + cartesianFace.getModX(), y + cartesianFace.getModY(), z + cartesianFace.getModZ());
+        }
+    }
+
+    private void propagateCollapseTo(int x, int y, int z) throws GenerationFailedException {
+        final Set<Piece> present = wave.getWithoutFill(x, y, z);
+        if (present == null) return;
+        final int sizeBefore = present.size();
+        final Set<Piece> piecesToRemove = new HashSet<>();
+        for (Piece presentPiece : present) {
+            final @NotNull PieceNeighborsPossibilities neighborsForPiece = Objects.requireNonNull(pieces.getNeighborsFor(presentPiece));
+            for (PieceNeighbors neighborPossibility : neighborsForPiece) {
+                boolean neighborPossibilityIsValid = true;
+                for (Map.Entry<Face, Piece> faceEntry : neighborPossibility.entrySet()) {
+                    final Set<Piece> newNodePresentPieces = wave.get(x + faceEntry.getKey().getModX(),
+                            y + faceEntry.getKey().getModY(), z + faceEntry.getKey().getModZ(), useModuloCoords);
+                    if (newNodePresentPieces == null) continue;
+                    if (!newNodePresentPieces.contains(faceEntry.getValue())) {
+                        neighborPossibilityIsValid = false;
+                        break;
+                    }
+                }
+                if (!neighborPossibilityIsValid) {
+                    piecesToRemove.add(presentPiece);
+                    break;
+                }
+            }
+        }
+        present.removeAll(piecesToRemove);
+        if (present.size() == sizeBefore) return; // nothing changed, no need to propagate
+        if (present.isEmpty()) {
+            hasImpossibleStates = true;
+            if (defaultPiece == null) throw new GenerationFailedException("Encountered an impossible state");
+            else pieceCollapsed(x, y, z, defaultPiece);
+        } else if (present.size() == 1) {
+            pieceCollapsed(x, y, z, present.iterator().next());
+        }
+        lastChangedEntropies.push(new ObjectWithCoordinates<>(present, x, y, z));
+        for (Face cartesianFace : Face.getCartesianFaces()) {
+            propagateCollapseTo(x + cartesianFace.getModX(), y + cartesianFace.getModY(), z + cartesianFace.getModZ());
         }
     }
 
