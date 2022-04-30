@@ -195,6 +195,18 @@ class LittleTests {
 
     @Test
     @Order(10)
+    void getCollapseCandidates() {
+        if (pieceSet == null) generatePieces();
+        assertTimeout(Duration.ofMillis(2000), () -> {
+            final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
+            Wave wave = new Wave(pieceSet, bounds, null);
+            wave.fillWithPossibleStates();
+            assertFalse(wave.getCollapseCandidatesAt(5, 5, 5).isEmpty(), "No collapse candidates");
+        });
+    }
+
+    @Test
+    @Order(10)
     void waveFunctionCollapse() {
         if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);

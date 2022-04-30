@@ -4,6 +4,7 @@ import fr.bananasmoothii.mcwfc.core.VirtualSpace.ObjectWithCoordinates;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Coords;
 import fr.bananasmoothii.mcwfc.core.util.Face;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,15 +80,7 @@ public class Wave {
     public void collapse() throws GenerationFailedException {
         if (isCollapsed) return;
 
-        // fill the wave with all possible states for each piece
-        boolean isAlreadyCollapsed = sample.size() <= 1;
-        final PieceNeighbors1 aPiece = sample.iterator().next();
-        for (ObjectWithCoordinates<Sample1> node : wave) {
-            wave.set(new Sample1(sample), node.x(), node.y(), node.z(), useModuloCoords);
-            if (isAlreadyCollapsed) {
-                pieceCollapsed(node.x(), node.y(), node.z(), aPiece);
-            }
-        }
+        fillWithPossibleStates();
 
         final Random random0 = getRandom(0, 0, 0);
         lastChangedEntropies = new Stack<>();
@@ -108,7 +101,25 @@ public class Wave {
         }
     }
 
-    private @NotNull Sample1 getCollapseCandidatesAt(int x, int y, int z) {
+    /**
+     * Fills the wave with all possible states for each piece. You probably want to use {@link #collapse()} instead.
+     */
+    public void fillWithPossibleStates() {
+        boolean isAlreadyCollapsed = sample.size() <= 1;
+        final PieceNeighbors1 aPiece = sample.iterator().next();
+        for (ObjectWithCoordinates<Sample1> node : wave) {
+            wave.set(new Sample1(sample), node.x(), node.y(), node.z(), useModuloCoords);
+            if (isAlreadyCollapsed) {
+                pieceCollapsed(node.x(), node.y(), node.z(), aPiece);
+            }
+        }
+    }
+
+    /**
+     * @return the pieces that could be collapsed at that position
+     */
+    @Contract(pure = true)
+    public @NotNull Sample1 getCollapseCandidatesAt(int x, int y, int z) {
         final Sample1 newCandidates = new Sample1();
         final Sample1 currentCandidates = wave.get(x, y, z, useModuloCoords);
         if (currentCandidates == null) return newCandidates;
