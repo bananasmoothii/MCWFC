@@ -120,12 +120,14 @@ public class WeightedSet<E> implements Set<E> {
     }
 
     public void addAll(@NotNull WeightedSet<E> other) {
-        addAll(other, 1);
+        for (Map.Entry<E, Integer> entry : other.map.entrySet()) {
+            add(entry.getKey(), entry.getValue());
+        }
     }
 
-    /**
+    /*
      * Adds avery element with a certain weight
-     */
+     *
     public void addAll(@NotNull WeightedSet<E> other, int weight) {
         final Iterator<Map.Entry<E, Integer>> iterator = other.elementsAndWeightsIterator();
         while (iterator.hasNext()) {
@@ -133,6 +135,8 @@ public class WeightedSet<E> implements Set<E> {
             add(next.getKey(), next.getValue() * weight);
         }
     }
+
+     */
 
     @Override
     public boolean retainAll(@NotNull Collection<?> c) {
@@ -292,11 +296,14 @@ public class WeightedSet<E> implements Set<E> {
         return false;
     }
 
+/*
     public WeightedSet<E> copyMultiplyWeights(int weight) {
         WeightedSet<E> copy = new WeightedSet<>();
         copy.addAll(this, weight);
         return copy;
     }
+
+ */
 
     /**
      * This calculates the {@link #gcd(int, int) GCD} of the weights and divides each weight by that GCD

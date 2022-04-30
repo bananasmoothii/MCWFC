@@ -20,6 +20,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -215,9 +216,9 @@ public class Commands extends BaseCommand {
 
     @Subcommand("dumppiece")
     @Description("copies the n-th piece from your dataset near you")
-    @Syntax("<piece number>")
-    @CommandCompletion("@range:0-10")
-    public static void dumpPiece(Player player, int pieceNumber) {
+    @Syntax("<piece number> [piece variant (default: -1)]")
+    @CommandCompletion("@range:0-20 @range:0-20")
+    public static void dumpPiece(Player player, int pieceNumber, @Nullable Integer pieceVariant) {
         final Sample dataSet = pieceSets.get(player);
         if (dataSet == null) {
             sendMessage(player, "§eYou have currently no piece set. You can generate one with /mcwfc generate " +
@@ -233,6 +234,12 @@ public class Commands extends BaseCommand {
             iter.next();
         }
         final PieceNeighborsPossibilities piece = iter.next();
+        final int pieceVariantToUse = pieceVariant == null ? -1 : pieceVariant;
+        if (pieceVariantToUse >= piece.size()) {
+            sendMessage(player, "§cPiece variant is too high. Try a number between -1 and " + (piece.size() - 1));
+        } else if (pieceVariantToUse < -1) {
+            sendMessage(player, "§cPiece variant is too low. Try a number between -1 and " + (piece.size() - 1));
+        }
         final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
         final LocalSession playerSession = bukkitPlayer.getSession();
         final Location playerLocation = player.getLocation();
@@ -242,7 +249,16 @@ public class Commands extends BaseCommand {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
             try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc dumppiece")) {
                 placePiece(piece.getCenterPiece(), editSession, playerX, playerY, playerZ);
-                final PieceNeighbors chosen = piece.weightedChoose();
+                final PieceNeighbors chosen;
+                if (pieceVariantToUse == -1) {
+                    chosen = piece.weightedChoose();
+                } else {
+                    final Iterator<PieceNeighbors> iter2 = piece.iterator();
+                    for (int i = 0; i < pieceVariantToUse; i++) {
+                        iter2.next();
+                    }
+                    chosen = iter2.next();
+                }
                 for (Map.Entry<Face, Piece> faceEntry : chosen.entrySet()) {
                     final Face face = faceEntry.getKey();
                     placePiece(faceEntry.getValue(), editSession,

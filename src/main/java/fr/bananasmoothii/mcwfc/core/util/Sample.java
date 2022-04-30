@@ -64,7 +64,12 @@ public class Sample implements Set<PieceNeighborsPossibilities> {
 
     @Override
     public boolean add(@NotNull PieceNeighborsPossibilities pieceNeighborsPossibilities) {
-        return map.put(pieceNeighborsPossibilities.getCenterPiece(), pieceNeighborsPossibilities) != pieceNeighborsPossibilities;
+        return map.merge(pieceNeighborsPossibilities.getCenterPiece(), pieceNeighborsPossibilities,
+                (p1, p2) -> {
+                    PieceNeighborsPossibilities merged = new PieceNeighborsPossibilities(p1);
+                    merged.addAll(p2);
+                    return merged;
+                }) != pieceNeighborsPossibilities;
     }
 
     @Override
