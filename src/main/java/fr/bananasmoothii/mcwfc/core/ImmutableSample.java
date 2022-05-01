@@ -6,18 +6,17 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 import java.util.Iterator;
 
-@Deprecated
 public class ImmutableSample extends Sample {
 
     public ImmutableSample(@NotNull Sample c) {
-        for (PieceNeighborsPossibilities c1 : c) {
+        for (PieceNeighbors c1 : c) {
             //noinspection UseBulkOperation
             super.add(c1);
         }
     }
 
     @Override
-    public boolean add(@NotNull PieceNeighborsPossibilities pieceNeighborsPossibilities) {
+    public boolean add(@NotNull PieceNeighbors pieceNeighborsPossibilities) {
         throw new UnsupportedOperationException("tried to modify an ImmutableSample");
     }
 
@@ -42,10 +41,10 @@ public class ImmutableSample extends Sample {
     }
 
     @Override
-    public @NotNull Iterator<PieceNeighborsPossibilities> iterator() {
+    public @NotNull Iterator<PieceNeighbors> iterator() {
         // not using directly map.values().iterator() as it has a remove() method
         return new Iterator<>() {
-            private final Iterator<PieceNeighborsPossibilities> iterator = ImmutableSample.super.iterator();
+            private final Iterator<PieceNeighbors> iterator = ImmutableSample.super.iterator();
 
             @Override
             public boolean hasNext() {
@@ -53,7 +52,7 @@ public class ImmutableSample extends Sample {
             }
 
             @Override
-            public PieceNeighborsPossibilities next() {
+            public PieceNeighbors next() {
                 return iterator.next();
             }
         };
@@ -69,3 +68,4 @@ public class ImmutableSample extends Sample {
         return this;
     }
 }
+

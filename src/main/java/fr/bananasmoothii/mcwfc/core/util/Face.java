@@ -3,7 +3,6 @@ package fr.bananasmoothii.mcwfc.core.util;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -239,7 +238,7 @@ public enum Face {
         };
     }
 
-    private static final List<Face> CARTESIAN_FACES = Arrays.asList(NORTH, SOUTH, EAST, WEST, TOP, BOTTOM);
+    private static final List<Face> CARTESIAN_FACES = List.of(NORTH, SOUTH, EAST, WEST, TOP, BOTTOM);
 
     public static List<Face> getCartesianFaces() {
         return CARTESIAN_FACES;

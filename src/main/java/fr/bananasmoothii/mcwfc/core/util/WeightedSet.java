@@ -7,12 +7,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
  * A Set where each element have a weight. The default weight is 1.
  */
-public class WeightedSet<E> implements Set<E> {
+public class WeightedSet<E> extends AbstractSet<E> {
 
     private final Map<E, Integer> map = new HashMap<>();
     private int totalWeight = 0;
@@ -139,35 +140,15 @@ public class WeightedSet<E> implements Set<E> {
      */
 
     @Override
-    public boolean retainAll(@NotNull Collection<?> c) {
-        boolean changed = false;
-        for (Object o : c) {
-            if (! contains(o)) {
-                remove(o);
-                changed = true;
-            }
-        }
-        return changed;
-    }
-
-    @Override
-    public boolean removeAll(@NotNull Collection<?> c) {
-        boolean changed = false;
-        for (Object o : c) {
-            if (remove(o)) changed = true;
-        }
-        return changed;
-    }
-
-    @Override
     public boolean containsAll(@NotNull Collection<?> c) {
         return map.keySet().containsAll(c);
     }
 
     @Override
     public boolean remove(Object o) {
-        if (map.remove(o) != null) {
-            totalWeight--;
+        final Integer removed = map.remove(o);
+        if (removed != null) {
+            totalWeight -= removed;
             return true;
         }
         return false;
@@ -251,17 +232,22 @@ public class WeightedSet<E> implements Set<E> {
                         return next.getValue();
                     }
 
-                    /**
-                     * Warning: this uses {@link WeightedSet#add(Object, int)} which doesn't replace the value but adds
-                     * it instead.
-                     */
+
                     @Override
                     public Integer setValue(Integer value) {
-                        int old = next().getValue();
-                        WeightedSet.this.add(next().getKey(), value);
-                        return old;
+                        return next.setValue(value);
                     }
                 };
+            }
+
+            @Override
+            public void remove() {
+                iterator.remove();
+            }
+
+            @Override
+            public void forEachRemaining(Consumer<? super Map.Entry<E, Integer>> action) {
+                iterator.forEachRemaining(action);
             }
         };
     }

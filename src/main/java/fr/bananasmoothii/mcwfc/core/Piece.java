@@ -4,16 +4,19 @@ import fr.bananasmoothii.mcwfc.core.util.RotationAngle;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.log;
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
 public class Piece/*<B>*/ {
+
+    // TODO: Make Piece an interface and create a MutablePiece and an ImmutablePiece class, the immutable piece will have
+    //       a list of all instances and if two pieces are equal, they will be the same instance.
 
     // TODO: change BlockData to B
     private final @NotNull BlockData[][] @NotNull[] data;
@@ -48,6 +51,7 @@ public class Piece/*<B>*/ {
 
     public void set(@NotNull BlockData blockData, int x, int y, int z) {
         data[x][y][z] = Objects.requireNonNull(blockData, "Piece cannot contain null blocks");
+        hashCodeCache = null;
     }
 
     /**
@@ -55,6 +59,7 @@ public class Piece/*<B>*/ {
      */
     public void fill(@NotNull BlockData blockData) {
         Objects.requireNonNull(blockData, "fill block must be non-null");
+        hashCodeCache = null;
         for (int x = 0; x < xSize; x++) {
             for (int y = 0; y < ySize; y++) {
                 for (int z = 0; z < zSize; z++) {
@@ -87,14 +92,23 @@ public class Piece/*<B>*/ {
             pieces.addAll(rotateZ(D270).generateSiblings(false));
             pieces.addAll(rotateX(D90).generateSiblings(false));
             pieces.addAll(rotateX(D270).generateSiblings(false));
+            pieces.addAll(flipY().generateSiblings(false));
         } else {
-            Piece r90 = rotateY(D90);
+            final Piece r90 = rotateY(D90);
             if (pieces.add(r90)) {
                 pieces.add(r90.flipX());
                 pieces.add(r90.flipZ());
             }
-            pieces.add(rotateY(D180));
-            pieces.add(rotateY(D270));
+            final Piece r180 = rotateY(D180);
+            if (pieces.add(r180)) {
+                pieces.add(r180.flipX());
+                pieces.add(r180.flipZ());
+            }
+            final Piece r270 = rotateY(D270);
+            if (pieces.add(r270)) {
+                pieces.add(r270.flipX());
+                pieces.add(r270.flipZ());
+            }
             pieces.add(flipX());
             pieces.add(flipZ());
         }
@@ -268,44 +282,43 @@ public class Piece/*<B>*/ {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof Piece piece)
+        if (o instanceof Piece piece && hashCode() == piece.hashCode())
             return Arrays.deepEquals(data, piece.data);
         return false;
     }
 
+    private @Nullable Integer hashCodeCache = null;
+
     @Override
     public int hashCode() {
-        return Arrays.deepHashCode(data);
+        if (hashCodeCache == null) hashCodeCache = Arrays.deepHashCode(data);
+        return hashCodeCache;
     }
 
     @Contract(pure = true)
     public void debugPrint(int zLayer) {
-        StringBuilder sb = new StringBuilder();
         for (int y = 0; y < ySize; y++) {
             for (int x = 0; x < xSize; x++) {
-                sb.append(data[x][y][zLayer]);
-                sb.append(' ');
+                System.out.print(data[x][y][zLayer]);
+                System.out.print(' ');
             }
-            sb.append('\n');
+            System.out.print('\n');
         }
-        sb.append('\n');
-        log.info(sb.toString());
+        System.out.print('\n');
     }
 
     @Contract(pure = true)
     public void debugPrint() {
-        StringBuilder sb = new StringBuilder();
         for (int y = 0; y < ySize; y++) {
             for (int z = 0; z < zSize; z++) {
                 for (int x = 0; x < xSize; x++) {
-                    sb.append(data[x][y][z]);
-                    sb.append(' ');
+                    System.out.print(data[x][y][z]);
+                    System.out.print(' ');
                 }
-                sb.append("   ");
+                System.out.print("   ");
             }
-            sb.append('\n');
+            System.out.print('\n');
         }
-        sb.append('\n');
-        log.info(sb.toString());
+        System.out.print('\n');
     }
 }

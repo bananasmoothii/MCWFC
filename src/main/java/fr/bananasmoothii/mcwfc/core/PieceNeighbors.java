@@ -5,25 +5,40 @@ import fr.bananasmoothii.mcwfc.core.util.RotationAngle;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
-/**
- * Represents the neighbors of a piece. It does not contain the centerpiece. It may only have zero or one neighbor per face.
- */
-@Deprecated
 public class PieceNeighbors extends HashMap<Face, Piece> {
+    private final @NotNull Piece centerPiece;
 
-    public PieceNeighbors() {
-        super(6);
+    public PieceNeighbors(@NotNull Piece centerPiece) {
+        this.centerPiece = Objects.requireNonNull(centerPiece);
     }
-    
-    public PieceNeighbors(@NotNull Map<? extends Face, ? extends Piece> m) {
+
+    public PieceNeighbors(Map<? extends Face, ? extends Piece> m, @NotNull Piece centerPiece) {
         super(m);
+        this.centerPiece = Objects.requireNonNull(centerPiece);
+    }
+
+    public @NotNull Piece getCenterPiece() {
+        return centerPiece;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PieceNeighbors that)) return false;
+        if (!super.equals(o)) return false;
+
+        return centerPiece.equals(that.centerPiece);
+    }
+
+    @Override
+    public int hashCode() {
+        int copy = super.hashCode();
+        copy = 31 * copy + centerPiece.hashCode();
+        return copy;
     }
 
     /**
@@ -40,14 +55,23 @@ public class PieceNeighbors extends HashMap<Face, Piece> {
             pieces.addAll(rotateZ(D270).generateSiblings(false));
             pieces.addAll(rotateX(D90).generateSiblings(false));
             pieces.addAll(rotateX(D270).generateSiblings(false));
+            pieces.addAll(flipY().generateSiblings(false));
         } else {
-            PieceNeighbors r90 = rotateY(D90);
+            final PieceNeighbors r90 = rotateY(D90);
             if (pieces.add(r90)) {
                 pieces.add(r90.flipX());
                 pieces.add(r90.flipZ());
             }
-            pieces.add(rotateY(D180));
-            pieces.add(rotateY(D270));
+            final PieceNeighbors r180 = rotateY(D180);
+            if (pieces.add(r180)) {
+                pieces.add(r180.flipX());
+                pieces.add(r180.flipZ());
+            }
+            final PieceNeighbors r270 = rotateY(D270);
+            if (pieces.add(r270)) {
+                pieces.add(r270.flipX());
+                pieces.add(r270.flipZ());
+            }
             pieces.add(flipX());
             pieces.add(flipZ());
         }
@@ -59,50 +83,50 @@ public class PieceNeighbors extends HashMap<Face, Piece> {
      */
     @Contract(pure = true)
     public @NotNull PieceNeighbors rotateX(final @NotNull RotationAngle angle) {
-        PieceNeighbors result = new PieceNeighbors();
+        PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateX(angle));
         for (Map.Entry<Face, Piece> entry : entrySet()) {
-            result.put(entry.getKey().rotateX(angle), entry.getValue().rotateX(angle));
+            copy.put(entry.getKey().rotateX(angle), entry.getValue().rotateX(angle));
         }
-        return result;
+        return copy;
     }
 
     public @NotNull PieceNeighbors rotateY(final @NotNull RotationAngle angle) {
-        PieceNeighbors result = new PieceNeighbors();
+        PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateY(angle));
         for (Map.Entry<Face, Piece> entry : entrySet()) {
-            result.put(entry.getKey().rotateY(angle), entry.getValue().rotateY(angle));
+            copy.put(entry.getKey().rotateY(angle), entry.getValue().rotateY(angle));
         }
-        return result;
+        return copy;
     }
 
     public @NotNull PieceNeighbors rotateZ(final @NotNull RotationAngle angle) {
-        PieceNeighbors result = new PieceNeighbors();
+        PieceNeighbors copy = new PieceNeighbors(centerPiece.rotateZ(angle));
         for (Map.Entry<Face, Piece> entry : entrySet()) {
-            result.put(entry.getKey().rotateZ(angle), entry.getValue().rotateZ(angle));
+            copy.put(entry.getKey().rotateZ(angle), entry.getValue().rotateZ(angle));
         }
-        return result;
+        return copy;
     }
 
     public @NotNull PieceNeighbors flipX() {
-        PieceNeighbors result = new PieceNeighbors();
+        PieceNeighbors copy = new PieceNeighbors(centerPiece.flipX());
         for (Map.Entry<Face, Piece> entry : entrySet()) {
-            result.put(entry.getKey().flipX(), entry.getValue().flipX());
+            copy.put(entry.getKey().flipX(), entry.getValue().flipX());
         }
-        return result;
+        return copy;
     }
 
     public @NotNull PieceNeighbors flipY() {
-        PieceNeighbors result = new PieceNeighbors();
+        PieceNeighbors copy = new PieceNeighbors(centerPiece.flipY());
         for (Map.Entry<Face, Piece> entry : entrySet()) {
-            result.put(entry.getKey().flipY(), entry.getValue().flipY());
+            copy.put(entry.getKey().flipY(), entry.getValue().flipY());
         }
-        return result;
+        return copy;
     }
 
     public @NotNull PieceNeighbors flipZ() {
-        PieceNeighbors result = new PieceNeighbors();
+        PieceNeighbors copy = new PieceNeighbors(centerPiece.flipZ());
         for (Map.Entry<Face, Piece> entry : entrySet()) {
-            result.put(entry.getKey().flipZ(), entry.getValue().flipZ());
+            copy.put(entry.getKey().flipZ(), entry.getValue().flipZ());
         }
-        return result;
+        return copy;
     }
 }

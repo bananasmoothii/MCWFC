@@ -1,170 +1,73 @@
 package fr.bananasmoothii.mcwfc.core;
 
+import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Iterator;
+import java.util.Map;
 
-@Deprecated
-public class Sample implements Set<PieceNeighborsPossibilities> {
-    private final Map<Piece, PieceNeighborsPossibilities> map = new HashMap<>();
-
+public class Sample extends WeightedSet<PieceNeighbors> {
     public Sample() {
     }
 
-    public Sample(@Nullable Collection<? extends PieceNeighborsPossibilities> from) {
-        if (from != null)
-            addAll(from);
-    }
-
-    @Override
-    public int size() {
-        return map.size();
-    }
-
-    public @Nullable PieceNeighborsPossibilities getNeighborsFor(Piece piece) {
-        return map.get(piece);
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return map.isEmpty();
-    }
-
-    @Override
-    public boolean contains(Object o) {
-        if (o instanceof PieceNeighborsPossibilities pieceNeighborsPossibilities)
-            return map.containsValue(pieceNeighborsPossibilities);
-        return false;
-    }
-
-    @NotNull
-    @Override
-    public Iterator<PieceNeighborsPossibilities> iterator() {
-        return map.values().iterator();
-    }
-
-    @NotNull
-    @Override
-    public PieceNeighborsPossibilities @NotNull [] toArray() {
-        return map.values().toArray(new PieceNeighborsPossibilities[0]);
+    public Sample(WeightedSet<PieceNeighbors> other) {
+        super(other);
     }
 
     /**
-     * @deprecated use {@link #toArray()}
+     * Filters this {@link Sample} and returns only the {@link PieceNeighbors} having this
+     * {@link Piece} as {@link PieceNeighbors#getCenterPiece() center piece}.
      */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    @NotNull
-    @Override
-    public <T> T @NotNull [] toArray(@NotNull T @NotNull [] a) {
-        return (T[]) toArray();
+    public @NotNull Sample getNeighborsFor(@NotNull Piece piece) {
+        Sample result = new Sample();
+        for (PieceNeighbors neighbors : this) {
+            if (neighbors.getCenterPiece().equals(piece)) {
+                result.add(neighbors);
+            }
+        }
+        return result;
     }
 
-    @Override
-    public boolean add(@NotNull PieceNeighborsPossibilities pieceNeighborsPossibilities) {
-        return map.merge(pieceNeighborsPossibilities.getCenterPiece(), pieceNeighborsPossibilities,
-                (p1, p2) -> {
-                    PieceNeighborsPossibilities merged = new PieceNeighborsPossibilities(p1);
-                    merged.addAll(p2);
-                    return merged;
-                })  != pieceNeighborsPossibilities;
+    /**
+     * @return all centerpieces of all {@link PieceNeighbors}
+     */
+    @Contract(pure = true)
+    public @NotNull WeightedSet<Piece> getCenterPieces() {
+        WeightedSet<Piece> result = new WeightedSet<>();
+        final Iterator<Map.Entry<PieceNeighbors, Integer>> iter = elementsAndWeightsIterator();
+        while (iter.hasNext()) {
+            final Map.Entry<PieceNeighbors, Integer> entry = iter.next();
+            result.add(entry.getKey().getCenterPiece(), entry.getValue());
+        }
+        return result;
     }
 
-    @Override
-    public boolean remove(Object o) {
-        if (o instanceof PieceNeighborsPossibilities pieceNeighborsPossibilities)
-            return map.remove(pieceNeighborsPossibilities.getCenterPiece(), pieceNeighborsPossibilities);
+    @Contract(pure = true)
+    public boolean centerPiecesContains(Piece piece) {
+        for (PieceNeighbors pieceNeighbors : this) {
+            final Piece centerPiece = pieceNeighbors.getCenterPiece();
+            if (centerPiece.equals(piece)) {
+                return true;
+            }
+        }
         return false;
     }
 
-    @Override
-    public boolean containsAll(@NotNull Collection<?> c) {
-        return map.values().containsAll(c);
-    }
-
-    @Override
-    public boolean addAll(@NotNull Collection<? extends PieceNeighborsPossibilities> c) {
-        boolean addedAll = true;
-        for (PieceNeighborsPossibilities pieceNeighborsPossibilities : c) {
-            if (!add(pieceNeighborsPossibilities)) addedAll = false;
-        }
-        return addedAll;
-    }
-
-    @Override
-    public boolean retainAll(@NotNull Collection<?> c) {
+    public boolean retainAllWithCenterPiece(@NotNull Piece centerPiece) {
         boolean changed = false;
-        for (Object o : c) {
-            if (! contains(o)) {
-                remove(o);
+        Iterator<PieceNeighbors> iterator = iterator();
+        while (iterator.hasNext()) {
+            PieceNeighbors neighbors = iterator.next();
+            if (!neighbors.getCenterPiece().equals(centerPiece)) {
+                iterator.remove();
                 changed = true;
             }
         }
         return changed;
     }
 
-    @Override
-    public boolean removeAll(@NotNull Collection<?> c) {
-        boolean changed = false;
-        for (Object o : c) {
-            if (remove(o)) changed = true;
-        }
-        return changed;
-    }
-
-    @Override
-    public void clear() {
-        map.clear();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof Sample sample)
-            return map.equals(sample.map);
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return map.hashCode();
-    }
-
-    public PieceNeighborsPossibilities peek() {
-        final Iterator<PieceNeighborsPossibilities> iterator = iterator();
-        if (!iterator().hasNext()) throw new IllegalArgumentException("The set is empty");
-        return iterator.next();
-    }
-
-    public Set<Piece> getCenterPieces() {
-        return new HashSet<>(map.keySet());
-    }
-
-    public PieceNeighborsPossibilities chooseRandom() {
-        return chooseRandom(ThreadLocalRandom.current());
-    }
-
-    public PieceNeighborsPossibilities chooseRandom(Random random) {
-        if (isEmpty()) throw new IllegalArgumentException("The set is empty");
-        int randomIndex = random.nextInt(map.size());
-        final Iterator<PieceNeighborsPossibilities> iter = iterator();
-        for (int i = 0; i < randomIndex; i++) {
-            iter.next();
-        }
-        return iter.next();
-    }
-
-    /**
-     * Simplifies the coefficients for each {@link PieceNeighborsPossibilities}. This method just calls {@link PieceNeighborsPossibilities#simplify()},
-     * but be aware because that can be a time-consuming task.
-     * @see PieceNeighborsPossibilities#simplify()
-     */
-    public void simplify() {
-        forEach(PieceNeighborsPossibilities::simplify);
-    }
-
-    public @NotNull ImmutableSample immutable() {
+    public ImmutableSample immutable() {
         return new ImmutableSample(this);
     }
 }

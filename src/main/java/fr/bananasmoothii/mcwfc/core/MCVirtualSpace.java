@@ -3,7 +3,6 @@ package fr.bananasmoothii.mcwfc.core;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Coords;
 import fr.bananasmoothii.mcwfc.core.util.Face;
-import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,10 +44,10 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      * Generates and reduces pieces along with their neighbors. This doesn't generate any edge or corner neighbors, only
      * cartesian faces as in {@link Face#isCartesian()}. This method doesn't allow putting pieces upside down.
      * @param pieceSize the size of each {@link Piece} in x, y and z directions
-     * @return a {@link WeightedSet}<{@link PieceNeighborsPossibilities}>, the weight represents the number of times a piece was seen.
+     * @return a {@link Sample}, the weight represents the number of times a piece was seen.
      * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
-    public Sample1 generatePieces(final int pieceSize) {
+    public Sample generatePieces(final int pieceSize) {
         return generatePieces(pieceSize, false, true);
     }
 
@@ -62,18 +61,18 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      *                             adding 1 to the y-axis makes it go to the bottom of this {@link MCVirtualSpace} and
      *                             vice-versa ({@code true}), or not ({code false}) ? If {@code false}, it will be almost
      *                             impossible to generate something higher in the {@link Wave}
-     * @return a {@link WeightedSet}<{@link PieceNeighborsPossibilities}>, the weight represents the number of times a piece was seen.
+     * @return a {@link Sample}, the weights in the sample represents the number of times a piece was seen.
      * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
      */
-    public Sample1 generatePieces(final int pieceSize, final boolean allowUpsideDown,
+    public Sample generatePieces(final int pieceSize, final boolean allowUpsideDown,
                                  final boolean useModuloCoordsTopAndBottom) {
-        Sample1 result = new Sample1();
+        Sample result = new Sample();
         HashMap<Coords, Piece> piecesCache = new HashMap<>(); // used to keep the same reference for pieces with the exact same coords
         for (int x = xMin(); x <= xMax(); x++) {
             for (int y = yMin(); y <= yMax(); y++) {
                 for (int z = zMin(); z <= zMax(); z++) {
                     @SuppressWarnings("ConstantConditions") // useModuloCoords is true
-                    PieceNeighbors1 pieceNeighbors = new PieceNeighbors1(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
+                    PieceNeighbors pieceNeighbors = new PieceNeighbors(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
                     pieceNeighbors.put(Face.TOP, getPieceAt(new Coords(x, y + pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
                     pieceNeighbors.put(Face.BOTTOM, getPieceAt(new Coords(x, y - pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
                     pieceNeighbors.put(Face.WEST, getPieceAt(new Coords(x - pieceSize, y, z), pieceSize, true, piecesCache));

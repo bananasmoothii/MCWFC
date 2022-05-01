@@ -10,8 +10,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.log;
-
 /**
  * A "visrtual" is a three-dimensional array list that allows negative indexes. There is no "append" because there is
  * no actual order. The Iterable implementation can be compared to three loops looping over X, Y and Z.
@@ -605,25 +603,23 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      * prints the layer zLayer
      */
     public void debugPrint(int zLayer) {
-        log.info("z = " + zLayer + " ; xMin = " + xMin + " ;  xMax = " + xMax + " ;  yMin = " + yMin + " ;  yMax = " + yMax);
-        StringBuilder sb = new StringBuilder();
+        System.out.println("z = " + zLayer + " ; xMin = " + xMin + " ;  xMax = " + xMax + " ;  yMin = " + yMin + " ;  yMax = " + yMax);
         for (int x = xMin + xOffset; x <= xMax + xOffset; x++) {
             for (int y = yMin + yOffset ; y <= yMax + yOffset; y++) {
                 T element = data[x][y][zLayer + zOffset];
-                sb.append(element != null ? element : fill != null ? fill : ' ');
-                sb.append(' ');
+                System.out.print(element != null ? element : fill != null ? fill : ' ');
+                System.out.print(' ');
             }
-            sb.append('\n');
+            System.out.print('\n');
         }
-        log.info(sb.toString());
     }
 
-    public void debugPrintAllLayers() {
-        log.info("\n");
+    public void debugPrint() {
+        System.out.println('\n');
         for (int z = zMin; z <= zMax; z++) {
             debugPrint(z);
         }
-        log.info("\n");
+        System.out.println('\n');
     }
 
 }

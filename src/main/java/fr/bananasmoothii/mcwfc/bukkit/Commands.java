@@ -31,8 +31,8 @@ import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.sendMessage;
 @CommandAlias("mcwfc")
 @CommandPermission("mcwfc.use")
 public class Commands extends BaseCommand {
-    private static final Map<Player, Sample1> pieceSets = new WeakHashMap<>();
-    private static final boolean INCREMENTAL_GENERATION = false; // CAUTION: very laggy
+    private static final Map<Player, Sample> pieceSets = new WeakHashMap<>();
+    private static boolean INCREMENTAL_GENERATION = false; // CAUTION: very laggy when true
 
     @Subcommand("generate dataset")
     @Syntax("<sample size> [allow upside down (default: false)] [use modulo coords for top and bottom (default: false)]")
@@ -90,7 +90,7 @@ public class Commands extends BaseCommand {
                 }
             }
 
-            final Sample1 dataSet = space.generatePieces(pieceSize, allowUpsideDown, useModuloCoordsTopAndBottom);
+            final Sample dataSet = space.generatePieces(pieceSize, allowUpsideDown, useModuloCoordsTopAndBottom);
             if (dataSet.size() > 0) {
                 pieceSets.put(player, dataSet);
                 sendMessage(player, "§aDone ! Dataset size: " + dataSet.size() + ". You can now run §n/mcwfc " +
@@ -110,7 +110,7 @@ public class Commands extends BaseCommand {
     @CommandCompletion("@nothing")
     public static void generate(Player player, String[] args) {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
-            Sample1 pieces = pieceSets.get(player);
+            Sample pieces = pieceSets.get(player);
             if (pieces == null) {
                 sendMessage(player, "§eYou have currently no piece set. You can generate one with /mcwfc generate " +
                         "dataset");
@@ -168,8 +168,8 @@ public class Commands extends BaseCommand {
             try {
                 wave.collapse();
                 if (!INCREMENTAL_GENERATION) {
-                    for (VirtualSpace.ObjectWithCoordinates<Sample1> node : wave.getWave()) {
-                        Sample1 piecesAtNode = node.object();
+                    for (VirtualSpace.ObjectWithCoordinates<Sample> node : wave.getWave()) {
+                        Sample piecesAtNode = node.object();
                         if (piecesAtNode.isEmpty()) continue;
                         Piece piece = piecesAtNode.peek().getCenterPiece();
                         int xMin = node.x() * piece.xSize;
@@ -217,7 +217,7 @@ public class Commands extends BaseCommand {
     @Syntax("<piece number>")
     @CommandCompletion("@range:0-20")
     public static void dumpPiece(Player player, int pieceNumber) {
-        final Sample1 dataSet = pieceSets.get(player);
+        final Sample dataSet = pieceSets.get(player);
         if (dataSet == null) {
             sendMessage(player, "§eYou have currently no piece set. You can generate one with /mcwfc generate " +
                     "dataset");
@@ -227,11 +227,11 @@ public class Commands extends BaseCommand {
             sendMessage(player, "§cPiece number is too high. Try a number between 0 and " + (dataSet.size() - 1));
             return;
         }
-        final @NotNull Iterator<PieceNeighbors1> iter = dataSet.iterator();
+        final @NotNull Iterator<PieceNeighbors> iter = dataSet.iterator();
         for (int i = 0; i < pieceNumber; i++) {
             iter.next();
         }
-        final PieceNeighbors1 piece = iter.next();
+        final PieceNeighbors piece = iter.next();
         final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
         final LocalSession playerSession = bukkitPlayer.getSession();
         final Location playerLocation = player.getLocation();
