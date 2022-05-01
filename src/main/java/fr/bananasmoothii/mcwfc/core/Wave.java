@@ -164,6 +164,12 @@ public class Wave {
                 newCandidates.add(currentCandidate, currentCandidateWeight);
             }
         }
+        // new: also check if the neighbors accept the current candidates
+        for (Face face : Face.getCartesianFaces()) {
+            final @Nullable Sample foundSample = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
+            if (foundSample == null) continue;
+            newCandidates.removeIf(newCandidate -> !foundSample.acceptsAt(face, newCandidate.getCenterPiece()));
+        }
         return newCandidates;
     }
 

@@ -1,5 +1,6 @@
 package fr.bananasmoothii.mcwfc.core;
 
+import fr.bananasmoothii.mcwfc.core.util.Face;
 import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -65,6 +66,18 @@ public class Sample extends WeightedSet<PieceNeighbors> {
             }
         }
         return changed;
+    }
+
+    /**
+     * @return true if there is at least one {@link PieceNeighbors} having this {@link Piece} at that {@link Face}
+     */
+    public boolean acceptsAt(@NotNull Face face, @NotNull Piece piece) {
+        for (PieceNeighbors neighbors : this) {
+            if (neighbors.get(face).equals(piece)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public ImmutableSample immutable() {
