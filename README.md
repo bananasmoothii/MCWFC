@@ -37,7 +37,8 @@ at each side.
 
 ## I need Help !
 With [this commit](https://github.com/bananasmoothii/MCWFC/commit/c91d152d3099eec47a59c0855d0e84c59417e41f),
-I couldn't get anything else than empty waves, where each `PieceNeighbors` is impossible.
+I couldn't get anything else than empty waves, where each `PieceNeighbors` is impossible (the wave was
+declared impossible in the propagation of the first collapse).
 
 I am using this to generate my dataset, it is 5\*1\*3 (the oak logs below are not included), and I set the
 piece size (N) to 1 so each piece only contains one block:
