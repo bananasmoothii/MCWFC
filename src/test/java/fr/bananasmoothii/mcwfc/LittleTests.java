@@ -216,7 +216,7 @@ class LittleTests {
     void getCollapseCandidates() {
         if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
-        Wave wave = new Wave(pieceSet, bounds, null);
+        Wave wave = new Wave(pieceSet, bounds);
         wave.fillWithPossibleStates();
         assertEquals(pieceSet.size(), wave.getCollapseCandidatesAt(5, 5, 5).size(),
                 "At the beginning, every piece should be a collapse candidate");
@@ -252,7 +252,7 @@ class LittleTests {
 
         for (int i = 0; i < 4; i++) {
             try {
-                final Wave wave = new Wave(sample, bounds, null);
+                final Wave wave = new Wave(sample, bounds);
                 System.out.println("Collapsing the wave with modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
@@ -290,7 +290,7 @@ class LittleTests {
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
         for (int i = 0; i < 4; i++) {
             try {
-                Wave wave = new Wave(pieceSet, bounds, null, false);
+                Wave wave = new Wave(pieceSet, bounds, false);
                 System.out.println("Collapsing the wave without modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");

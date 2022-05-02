@@ -21,41 +21,22 @@ public class Wave {
     private final VirtualSpace<Sample> wave;
     private final ImmutableSample sample;
     private final long seed;
-    private final @Nullable PieceNeighbors defaultPiece;
     private final List<@NotNull PieceCollapseListener> pieceCollapseListeners = new ArrayList<>();
     public final boolean useModuloCoords;
     private boolean isCollapsed = false;
     private boolean hasImpossibleStates = false;
 
-    public Wave(@NotNull Sample sample, @NotNull Bounds bounds, @Nullable Piece defaultPiece) {
-        this(sample, bounds, defaultPiece, true);
+    public Wave(@NotNull Sample sample, @NotNull Bounds bounds) {
+        this(sample, bounds, true);
     }
 
-    public Wave(@NotNull Sample sample, @NotNull Bounds bounds, @Nullable Piece defaultPiece, boolean useModuloCoords) {
-        this(sample, bounds, defaultPiece, useModuloCoords, ThreadLocalRandom.current().nextLong());
+    public Wave(@NotNull Sample sample, @NotNull Bounds bounds, boolean useModuloCoords) {
+        this(sample, bounds, useModuloCoords, ThreadLocalRandom.current().nextLong());
     }
 
-    /**
-     * @param defaultPiece if not null, instead of throwing a {@link GenerationFailedException} when there is a piece
-     *                     with an entropy of 0, it will be replaced by this piece.
-     */
-    public Wave(@NotNull Sample sample, @NotNull Bounds bounds, @Nullable Piece defaultPiece, boolean useModuloCoords, long seed) {
+    public Wave(@NotNull Sample sample, @NotNull Bounds bounds, boolean useModuloCoords, long seed) {
         wave = new VirtualSpace<>(bounds);
         this.sample = sample.immutable();
-        if (defaultPiece == null) {
-            this.defaultPiece = null;
-        } else {
-            this.defaultPiece = new PieceNeighbors(defaultPiece);
-            /*
-            for (Face cartesianFace : Face.getCartesianFaces()) {
-                this.defaultPiece.put(cartesianFace, defaultPiece);
-            }
-            */
-            int pieceSize = sample.peek().getCenterPiece().xSize; // assuming all pieces are cubic
-            if (defaultPiece.xSize != pieceSize || defaultPiece.ySize != pieceSize || defaultPiece.zSize != pieceSize) {
-                throw new IllegalArgumentException("Default piece must have the same size as the others");
-            }
-        }
         this.useModuloCoords = useModuloCoords;
         this.seed = seed;
     }
@@ -183,8 +164,7 @@ public class Wave {
         final PieceNeighbors collapsed;
         if (collapseCandidates.isEmpty()) {
             hasImpossibleStates = true;
-            if (defaultPiece == null) throw new GenerationFailedException("Encountered an impossible state");
-            else collapsed = defaultPiece;
+            throw new GenerationFailedException("Encountered an impossible state");
         } else
             collapsed = Objects.requireNonNull(collapseCandidates.weightedChoose(getRandom(x, y, z)),
                     "weightedChoose() returned null");
@@ -208,8 +188,7 @@ public class Wave {
             if (sampleAtThatFace.retainAllWithCenterPiece(faceEntry.getValue())) {
                 if (sampleAtThatFace.isEmpty()) {
                     hasImpossibleStates = true;
-                    if (defaultPiece == null) throw new GenerationFailedException("Encountered an impossible state");
-                    else sampleAtThatFace.add(defaultPiece);
+                    throw new GenerationFailedException("Encountered an impossible state");
                 } else if (sampleAtThatFace.size() == 1) {
                     pieceCollapsed(x + face.getModX(), y + face.getModY(), z + face.getModZ(), sampleAtThatFace.peek());
                 }
@@ -234,8 +213,7 @@ public class Wave {
         if (present.size() == sizeBefore) return; // nothing changed, no need to propagate
         if (present.isEmpty()) {
             hasImpossibleStates = true;
-            if (defaultPiece == null) throw new GenerationFailedException("Encountered an impossible state");
-            else pieceCollapsedCallListeners(x, y, z, defaultPiece);
+            throw new GenerationFailedException("Encountered an impossible state");
         } else if (present.size() == 1) {
             pieceCollapsed(x, y, z, present.peek());
         }

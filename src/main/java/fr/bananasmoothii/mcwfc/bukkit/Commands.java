@@ -137,10 +137,8 @@ public class Commands extends BaseCommand {
                 return;
             }
 
-            final Piece defaultPiece = null; // new Piece(pieces.getAny().getCenterPiece().xSize, Material.AIR.createBlockData());
-
             final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
-            Wave wave = new Wave(pieces, bounds, defaultPiece, useModuloCoords, seed);
+            Wave wave = new Wave(pieces, bounds, useModuloCoords, seed);
             final LocalSession playerSession = bukkitPlayer.getSession();
             if (INCREMENTAL_GENERATION)
                 wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
@@ -190,6 +188,7 @@ public class Commands extends BaseCommand {
                         }
                     }
                 }
+                sendMessage(player, "§aDone with generating !");
             } catch (Wave.GenerationFailedException e) {
                 sendMessage(player, "§cSorry, the generation failed. This can happen sometimes if your " +
                         "dataset is too complex. But this happens randomly, so just try again (if you set a seed, make sure " +
@@ -201,14 +200,6 @@ public class Commands extends BaseCommand {
                         "it just ran out of memory. Please try again with a smaller selection. If you get this error " +
                         "even with a smaller generation area, this may be a bug.");
             }
-            sendMessage(player, "§aDone with generating !");
-            if (wave.hasImpossibleStates() && defaultPiece != null)
-                sendMessage(player, "§cSorry, but your generation has some impossible states. This can happen sometimes if your " +
-                        "dataset is too complex. But this happens randomly, so just try again (if you set a seed, make sure " +
-                        "to change it otherwise it will encounter the same problem). If you still get this error, please " +
-                        "try with a less complex dataset, that means a dataset with a low variety (using less different " +
-                        "blocs). You can also use a dataset with modulo coords (the default parameter)");
-
         });
     }
 
