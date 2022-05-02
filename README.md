@@ -50,7 +50,7 @@ to see a piece along with its neighbors, and I found everything I wanted: a reds
 connected to a leaves block in a corner, and a leaves block is always connected to another leaves block
 in straight line.
 
-However... I got this:
+However... I got this (with [the commit right before the one where I said I am abandonning](https://github.com/bananasmoothii/MCWFC/tree/c91d152d3099eec47a59c0855d0e84c59417e41f)):
 ![generated](images/generated.png)
 And also I got a lot of impossible states.
 
