@@ -34,27 +34,5 @@ what that exact `PieceNeighbors` is expecting at each side (`Face`). Keeping onl
 let us know what all `PieceNeighbors` in the dataset with that piece as the centerpiece are expecting
 at each side.
 
-
-## I need Help !
-With [this commit](https://github.com/bananasmoothii/MCWFC/commit/c91d152d3099eec47a59c0855d0e84c59417e41f),
-I couldn't get anything else than empty waves, where each `PieceNeighbors` is impossible.
-
-I am using this to generate my dataset, it is 5\*1\*3 (the oak logs below are not included), and I set the
-piece size (N) to 1 so each piece only contains one block:
-![dataset](images/dataset.png)
-I am using "modulo coords", that means that when the generator is reaching a side, it just goes to the
-opposite side. That means that the two oak leaves blocs at the sides are actually connected.
-
-The dataset generation seems to work properly, as I added a `/mcwfc dumppiece <piece number>` command
-to see a piece along with its neighbors, and I found everything I wanted: a redstone block is always
-connected to a leaves block in a corner, and a leaves block is always connected to another leaves block
-in straight line.
-
-However... I got this:
-![generated](images/generated.png)
-And also I got a lot of impossible states.
-
-**Any help or advice would be greatly appreciated !**
-
 ***
 PS: I'm French, so if you see some badly named or explained things, feel free to tell me !

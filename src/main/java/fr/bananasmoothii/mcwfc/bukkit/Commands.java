@@ -238,13 +238,14 @@ public class Commands extends BaseCommand {
         final int playerX = playerLocation.getBlockX();
         final int playerY = playerLocation.getBlockY();
         final int playerZ = playerLocation.getBlockZ();
+        final int pieceSize = piece.getCenterPiece().xSize;
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
             try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc dumppiece")) {
                 placePiece(piece.getCenterPiece(), editSession, playerX, playerY, playerZ);
                 for (Map.Entry<Face, Piece> faceEntry : piece.entrySet()) {
                     final Face face = faceEntry.getKey();
                     placePiece(faceEntry.getValue(), editSession,
-                            playerX + face.getModX(), playerY + face.getModY(), playerZ + face.getModZ());
+                            playerX + face.getModX() * pieceSize, playerY + face.getModY() * pieceSize, playerZ + face.getModZ() * pieceSize);
                 }
                 playerSession.remember(editSession);
             }

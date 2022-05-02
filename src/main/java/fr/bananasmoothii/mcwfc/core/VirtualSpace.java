@@ -604,9 +604,24 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
      */
     public void debugPrint(int zLayer) {
         System.out.println("z = " + zLayer + " ; xMin = " + xMin + " ;  xMax = " + xMax + " ;  yMin = " + yMin + " ;  yMax = " + yMax);
-        for (int x = xMin + xOffset; x <= xMax + xOffset; x++) {
-            for (int y = yMin + yOffset ; y <= yMax + yOffset; y++) {
+        for (int y = yMin + yOffset ; y <= yMax + yOffset; y++) {
+            for (int x = xMin + xOffset; x <= xMax + xOffset; x++) {
                 T element = data[x][y][zLayer + zOffset];
+                System.out.print(element != null ? element : fill != null ? fill : ' ');
+                System.out.print(' ');
+            }
+            System.out.print('\n');
+        }
+    }
+
+    /**
+     * prints the layer yLayer
+     */
+    public void debugPrintY(int yLayer) {
+        System.out.println("y = " + yLayer + " ; xMin = " + xMin + " ;  xMax = " + xMax + " ;  yMin = " + yMin + " ;  yMax = " + yMax);
+        for (int z = zMin + zOffset ; z <= zMax + zOffset; z++) {
+            for (int x = xMin + xOffset; x <= xMax + xOffset; x++) {
+                T element = data[x][yLayer + yOffset][z];
                 System.out.print(element != null ? element : fill != null ? fill : ' ');
                 System.out.print(' ');
             }

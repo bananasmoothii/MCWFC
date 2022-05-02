@@ -11,6 +11,7 @@ public class BlockDataImpl implements BlockData {
 
     public static final BlockDataImpl AIR = new BlockDataImpl(Material.AIR);
     public static final BlockDataImpl STONE = new BlockDataImpl(Material.STONE);
+    public static final BlockDataImpl LEAVES = new BlockDataImpl(Material.OAK_LEAVES);
 
     private final Material material;
 
@@ -61,6 +62,7 @@ public class BlockDataImpl implements BlockData {
 
     @Override
     public String toString() {
+        if (this == AIR) return "-";
         return String.valueOf(material.name().charAt(0));
     }
 }

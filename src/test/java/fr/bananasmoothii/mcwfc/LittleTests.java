@@ -4,6 +4,7 @@ import fr.bananasmoothii.mcwfc.core.*;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Face;
 import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -11,11 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static fr.bananasmoothii.mcwfc.BlockDataImpl.AIR;
-import static fr.bananasmoothii.mcwfc.BlockDataImpl.STONE;
+import static fr.bananasmoothii.mcwfc.BlockDataImpl.*;
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -224,11 +225,34 @@ class LittleTests {
     @Test
     @Order(12)
     void waveFunctionCollapse() {
-        if (pieceSet == null) generatePieces();
-        final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
+        final Bounds bounds = new Bounds(0, 0, 0, 4, 0, 2);
+        final MCVirtualSpace sampleSource = new MCVirtualSpace(bounds, AIR);
+        /* Making a little 2D path with stone at the corners:
+         * - - - - -
+         * O S - S O
+         * - O O O -
+         * O: LEAVES (oak)
+         * S: STONE
+         * -: AIR
+         */
+        sampleSource.set(LEAVES, 0, 0, 1);
+        sampleSource.set(STONE, 1, 0, 1);
+        sampleSource.set(LEAVES, 1, 0, 2);
+        sampleSource.set(LEAVES, 2, 0, 2);
+        sampleSource.set(LEAVES, 3, 0, 2);
+        sampleSource.set(STONE, 3, 0, 1);
+        sampleSource.set(LEAVES, 4, 0, 1);
+        sampleSource.debugPrintY(0);
+        final Sample sample = sampleSource.generatePieces(1);
+        assertEquals(4, new HashSet<>(sample).stream().filter(p -> p.getCenterPiece().get(0, 0, 0) == STONE).count());
+        assertEquals(14, new HashSet<>(sample).stream().filter(p -> p.getCenterPiece().get(0, 0, 0) == LEAVES).count());
+        assertEquals(16, new HashSet<>(sample).stream().filter(p -> p.getCenterPiece().get(0, 0, 0) == AIR).count());
+        assertEquals(34, sample.size(), "The sample should have 34 elements");
+
+
         for (int i = 0; i < 4; i++) {
             try {
-                Wave wave = new Wave(pieceSet, bounds, null);
+                final Wave wave = new Wave(sample, bounds, null);
                 System.out.println("Collapsing the wave with modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
@@ -240,7 +264,23 @@ class LittleTests {
                 e.printStackTrace();
             }
         }
-        //fail("The wave has failed to collapse after 4 attempts");
+        fail("The wave has failed to collapse after 4 attempts");
+    }
+
+    @Contract(pure = true)
+    private static void debugPrintSampleOnePieceIgnoreYLayers(@NotNull Sample sample) {
+        for (PieceNeighbors pieceNeighbors : sample) {
+            debugPrintPieceNeighborOnePieceIgnoreYLayers(pieceNeighbors);
+        }
+    }
+
+    private static void debugPrintPieceNeighborOnePieceIgnoreYLayers(@NotNull PieceNeighbors pieceNeighbors) {
+        System.out.println();
+        System.out.println("  " + pieceNeighbors.get(Face.NORTH).get(0, 0, 0));
+        System.out.println(pieceNeighbors.get(Face.WEST).get(0, 0, 0) + " "
+                + pieceNeighbors.getCenterPiece().get(0, 0, 0) + " "
+                + pieceNeighbors.get(Face.EAST).get(0, 0, 0));
+        System.out.println("  " + pieceNeighbors.get(Face.SOUTH).get(0, 0, 0));
     }
 
     @Test
