@@ -328,6 +328,9 @@ public class Wave {
     }
 
     public static class GenerationFailedException extends Exception {
+        // TODO: make GenerationFailedException specify some improvements that could be made on the dataset (adding
+        //       one or more (probably just one since the generation stops at the first impossible state)
+        //       PieceNeighbors) to make it easier to collapse the wave.
         public GenerationFailedException(String message) {
             super(message);
         }
