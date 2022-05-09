@@ -6,17 +6,20 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 import java.util.Iterator;
 
-public class ImmutableSample extends Sample {
+/**
+ * @param <B> the type of the blocks in the {@link Piece}s. For example, in bukkit, this is {@link org.bukkit.block.data.BlockData}
+ */
+public class ImmutableSample<B> extends Sample<B> {
 
-    public ImmutableSample(@NotNull Sample c) {
-        for (PieceNeighbors c1 : c) {
+    public ImmutableSample(@NotNull Sample<B> c) {
+        for (PieceNeighbors<B> c1 : c) {
             //noinspection UseBulkOperation
             super.add(c1);
         }
     }
 
     @Override
-    public boolean add(@NotNull PieceNeighbors pieceNeighborsPossibilities) {
+    public boolean add(@NotNull PieceNeighbors<B> pieceNeighborsPossibilities) {
         throw new UnsupportedOperationException("tried to modify an ImmutableSample");
     }
 
@@ -41,10 +44,10 @@ public class ImmutableSample extends Sample {
     }
 
     @Override
-    public @NotNull Iterator<PieceNeighbors> iterator() {
+    public @NotNull Iterator<PieceNeighbors<B>> iterator() {
         // not using directly map.values().iterator() as it has a remove() method
         return new Iterator<>() {
-            private final Iterator<PieceNeighbors> iterator = ImmutableSample.super.iterator();
+            private final Iterator<PieceNeighbors<B>> iterator = ImmutableSample.super.iterator();
 
             @Override
             public boolean hasNext() {
@@ -52,19 +55,19 @@ public class ImmutableSample extends Sample {
             }
 
             @Override
-            public PieceNeighbors next() {
+            public PieceNeighbors<B> next() {
                 return iterator.next();
             }
         };
     }
 
     @Contract("-> new")
-    public @NotNull Sample mutable() {
-        return new Sample(this);
+    public @NotNull Sample<B> mutable() {
+        return new Sample<>(this);
     }
 
     @Override
-    public @NotNull ImmutableSample immutable() {
+    public @NotNull ImmutableSample<B> immutable() {
         return this;
     }
 }

@@ -3,7 +3,7 @@
 algorithm in Minecraft.</i>
 
 
-## How I wanted it to work
+## How it works
 My method may be wrong on some points, if it is, feel free to open an issue.
 
 #### 1- The generation of the dataset (sample)

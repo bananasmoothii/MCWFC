@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static fr.bananasmoothii.mcwfc.BlockDataImpl.*;
+import static fr.bananasmoothii.mcwfc.BImpl.*;
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,15 +52,15 @@ class LittleTests {
     @Test
     @Order(2)
     void pieceRotation() {
-        Piece piece1 = new Piece(2, 3, 1, AIR);
+        Piece<BImpl> piece1 = new Piece<>(2, 3, 1, AIR);
         piece1.set(STONE, 1, 2, 0);
         piece1.set(STONE, 0, 1, 0);
-        Piece piece2 = piece1.rotateZ(D270);
+        Piece<BImpl> piece2 = piece1.rotateZ(D270);
         assertEquals(STONE, piece2.get(2, 0, 0));
         assertEquals(piece1, piece2.rotateZ(D90));
         assertEquals(piece2.rotateZ(D270), piece1.rotateZ(D180));
 
-        Piece piece3 = new Piece(2, 3, 4, AIR);
+        Piece<BImpl> piece3 = new Piece<>(2, 3, 4, AIR);
         piece3.set(STONE, 0, 0, 0);
         assertEquals(
                 piece3,
@@ -75,7 +75,7 @@ class LittleTests {
     @Test
     @Order(3)
     void pieceFlip() {
-        Piece piece = new Piece(2, 3, 4, AIR);
+        Piece<BImpl> piece = new Piece<>(2, 3, 4, AIR);
         piece.set(STONE, 0, 0, 0);
         assertEquals(piece,
                 piece.flipX().flipY().flipZ().flipX().flipY().flipZ());
@@ -84,10 +84,10 @@ class LittleTests {
     @Test
     @Order(4)
     void pieceSiblings() {
-        Piece piece;
-        Set<@NotNull Piece> pieces;
+        Piece<BImpl> piece;
+        Set<@NotNull Piece<BImpl>> pieces;
         { // IDK why I did that way
-            piece = new Piece(2, 3, 4, AIR);
+            piece = new Piece<>(2, 3, 4, AIR);
             piece.set(STONE, 0, 0, 0);
             piece.set(STONE, 0, 1, 3);
             //piece.debugPrint();
@@ -95,7 +95,7 @@ class LittleTests {
             assertEquals(48, pieces.size());
         }
         {
-            piece = new Piece(3, 3, 3, AIR);
+            piece = new Piece<>(3, 3, 3, AIR);
             pieces = piece.generateSiblings(true);
             assertEquals(1, pieces.size());
         }
@@ -129,11 +129,11 @@ class LittleTests {
     @Test
     @Order(6)
     void pieceNeighborsSiblings() {
-        PieceNeighbors neighbors;
-        Piece center = new Piece(2, 3, 4, AIR);
+        PieceNeighbors<BImpl> neighbors;
+        Piece<BImpl> center = new Piece<>(2, 3, 4, AIR);
         center.set(STONE, 0, 0, 0);
         center.set(STONE, 0, 1, 3);
-        neighbors = new PieceNeighbors(center);
+        neighbors = new PieceNeighbors<>(center);
         neighbors.put(Face.TOP, center);
         neighbors.put(Face.SOUTH_EAST_TOP, center);
         assertEquals(48, neighbors.generateSiblings(true).size());
@@ -143,25 +143,25 @@ class LittleTests {
     @Test
     @Order(7)
     void coordsAreInBounds() {
-        MCVirtualSpace space = new MCVirtualSpace(AIR);
+        MCVirtualSpace<BImpl> space = new MCVirtualSpace<>(AIR);
         space.ensureCapacityForElement(-7, -7, -7);
         space.ensureCapacityForElement(7, 7, 7);
         for (int x = -8; x <= 8; x++) {
             int xInBounds = space.xInBounds(x);
             assertTrue(space.xMin() <= xInBounds && xInBounds <= space.xMax());
         }
-        space = new MCVirtualSpace(AIR);
+        space = new MCVirtualSpace<>(AIR);
         space.set(STONE, -4, 3, 8);
         assertEquals(STONE, space.getModuloCoords(1, -1, 26)); // 26 % 9 = 8
 
-        space = new MCVirtualSpace(new Bounds(-285, 64, 88, -282, 65, 91), AIR);
+        space = new MCVirtualSpace<>(new Bounds(-285, 64, 88, -282, 65, 91), AIR);
         assertEquals(64, space.yInBounds(66));
     }
 
     @Test
     @Order(8)
     void generatePieces() {
-        MCVirtualSpace space = new MCVirtualSpace(AIR);
+        MCVirtualSpace<BImpl> space = new MCVirtualSpace<>(AIR);
         // define the real sample size
         space.ensureCapacityForElement(-1, -1, 0); // min point
         space.ensureCapacityForElement(1, 2, 5);   // max point
@@ -177,7 +177,7 @@ class LittleTests {
         System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
     }
 
-    public static Piece faultyPiece = new Piece(2, AIR);
+    public static Piece<BImpl> faultyPiece = new Piece<>(2, AIR);
     static {
         faultyPiece.set(STONE, 0, 0, 0);
         faultyPiece.set(STONE, 0, 1, 0);
@@ -189,8 +189,8 @@ class LittleTests {
     void checkPieces() {
         if (pieceSet == null) generatePieces();
         int i = 0;
-        for (PieceNeighbors pieceNeighbors : pieceSet) {
-            for (Map.Entry<Face, Piece> entry : pieceNeighbors.entrySet()) {
+        for (PieceNeighbors<BImpl> pieceNeighbors : pieceSet) {
+            for (Map.Entry<Face, Piece<BImpl>> entry : pieceNeighbors.entrySet()) {
                 assertTrue(pieceSet.centerPiecesContains(entry.getValue()),
                         "The generated piece set is not valid because the center pieces do not contain "
                                 + entry.getValue() + ", that is at " + entry.getKey() + " of the " + i + "th piece");
@@ -209,14 +209,14 @@ class LittleTests {
         });
     }
 
-    private static Sample pieceSet;
+    private static Sample<BImpl> pieceSet;
 
     @Test
     @Order(11)
     void getCollapseCandidates() {
         if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
-        Wave wave = new Wave(pieceSet, bounds);
+        Wave<BImpl> wave = new Wave<>(pieceSet, bounds);
         wave.fillWithPossibleStates();
         assertEquals(pieceSet.size(), wave.getCollapseCandidatesAt(5, 5, 5).size(),
                 "At the beginning, every piece should be a collapse candidate");
@@ -226,7 +226,7 @@ class LittleTests {
     @Order(12)
     void waveFunctionCollapse() {
         final Bounds bounds = new Bounds(0, 0, 0, 4, 0, 2);
-        final MCVirtualSpace sampleSource = new MCVirtualSpace(bounds, AIR);
+        final MCVirtualSpace<BImpl> sampleSource = new MCVirtualSpace<>(bounds, AIR);
         /* Making a little 2D path with stone at the corners:
          * - - - - -
          * O S - S O
@@ -243,7 +243,7 @@ class LittleTests {
         sampleSource.set(STONE, 3, 0, 1);
         sampleSource.set(LEAVES, 4, 0, 1);
         sampleSource.debugPrintY(0);
-        final Sample sample = sampleSource.generatePieces(1);
+        final Sample<BImpl> sample = sampleSource.generatePieces(1);
         assertEquals(4, new HashSet<>(sample).stream().filter(p -> p.getCenterPiece().get(0, 0, 0) == STONE).count());
         assertEquals(14, new HashSet<>(sample).stream().filter(p -> p.getCenterPiece().get(0, 0, 0) == LEAVES).count());
         assertEquals(16, new HashSet<>(sample).stream().filter(p -> p.getCenterPiece().get(0, 0, 0) == AIR).count());
@@ -252,7 +252,7 @@ class LittleTests {
 
         for (int i = 0; i < 4; i++) {
             try {
-                final Wave wave = new Wave(sample, bounds);
+                final Wave<BImpl> wave = new Wave<>(sample, bounds);
                 System.out.println("Collapsing the wave with modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");
@@ -268,13 +268,13 @@ class LittleTests {
     }
 
     @Contract(pure = true)
-    private static void debugPrintSampleOnePieceIgnoreYLayers(@NotNull Sample sample) {
-        for (PieceNeighbors pieceNeighbors : sample) {
+    private static void debugPrintSampleOnePieceIgnoreYLayers(@NotNull Sample<BImpl> sample) {
+        for (PieceNeighbors<BImpl> pieceNeighbors : sample) {
             debugPrintPieceNeighborOnePieceIgnoreYLayers(pieceNeighbors);
         }
     }
 
-    private static void debugPrintPieceNeighborOnePieceIgnoreYLayers(@NotNull PieceNeighbors pieceNeighbors) {
+    private static void debugPrintPieceNeighborOnePieceIgnoreYLayers(@NotNull PieceNeighbors<BImpl> pieceNeighbors) {
         System.out.println();
         System.out.println("  " + pieceNeighbors.get(Face.NORTH).get(0, 0, 0));
         System.out.println(pieceNeighbors.get(Face.WEST).get(0, 0, 0) + " "
@@ -290,7 +290,7 @@ class LittleTests {
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
         for (int i = 0; i < 4; i++) {
             try {
-                Wave wave = new Wave(pieceSet, bounds, false);
+                Wave<BImpl> wave = new Wave<>(pieceSet, bounds, false);
                 System.out.println("Collapsing the wave without modulo coords, try " + i);
                 wave.collapse();
                 System.out.println("Yay, the wave has collapsed!");

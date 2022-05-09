@@ -11,30 +11,33 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class Wave {
+/**
+ * @param <B> the type of the blocks in the {@link Piece}s. For example, in bukkit, this is {@link org.bukkit.block.data.BlockData}
+ */
+public class Wave<B> {
     /**
-     * This needs to be a virtual space of {@link Sample} and not just {@link Set}<{@link Piece}>
-     * because two {@link PieceNeighbors} are different while their centerpiece might be the same.
-     * At the begenning, every node is equal to {@link #sample}, but they are not the same object: each {@link Sample}
+     * This needs to be a virtual space of {@link Sample<B>} and not just {@link Set}<{@link Piece}>
+     * because two {@link PieceNeighbors<B>} are different while their centerpiece might be the same.
+     * At the begenning, every node is equal to {@link #sample}, but they are not the same object: each {@link Sample<B>}
      * in the {@link VirtualSpace} is unique.
      */
-    private final VirtualSpace<Sample> wave;
-    private final ImmutableSample sample;
+    private final VirtualSpace<Sample<B>> wave;
+    private final ImmutableSample<B> sample;
     private final long seed;
-    private final List<@NotNull PieceCollapseListener> pieceCollapseListeners = new ArrayList<>();
+    private final List<@NotNull PieceCollapseListener<B>> pieceCollapseListeners = new ArrayList<>();
     public final boolean useModuloCoords;
     private boolean isCollapsed = false;
     private boolean hasImpossibleStates = false;
 
-    public Wave(@NotNull Sample sample, @NotNull Bounds bounds) {
+    public Wave(@NotNull Sample<B> sample, @NotNull Bounds bounds) {
         this(sample, bounds, true);
     }
 
-    public Wave(@NotNull Sample sample, @NotNull Bounds bounds, boolean useModuloCoords) {
+    public Wave(@NotNull Sample<B> sample, @NotNull Bounds bounds, boolean useModuloCoords) {
         this(sample, bounds, useModuloCoords, ThreadLocalRandom.current().nextLong());
     }
 
-    public Wave(@NotNull Sample sample, @NotNull Bounds bounds, boolean useModuloCoords, long seed) {
+    public Wave(@NotNull Sample<B> sample, @NotNull Bounds bounds, boolean useModuloCoords, long seed) {
         wave = new VirtualSpace<>(bounds);
         this.sample = sample.immutable();
         this.useModuloCoords = useModuloCoords;
@@ -45,7 +48,7 @@ public class Wave {
         return hasImpossibleStates;
     }
 
-    public VirtualSpace<Sample> getWave() {
+    public VirtualSpace<Sample<B>> getWave() {
         return wave;
     }
 
@@ -108,9 +111,9 @@ public class Wave {
      */
     public void fillWithPossibleStates() {
         boolean isAlreadyCollapsed = sample.size() <= 1;
-        final PieceNeighbors aPiece = sample.iterator().next();
-        for (ObjectWithCoordinates<Sample> node : wave) {
-            wave.set(new Sample(sample), node.x(), node.y(), node.z(), useModuloCoords);
+        final PieceNeighbors<B> aPiece = sample.iterator().next();
+        for (ObjectWithCoordinates<Sample<B>> node : wave) {
+            wave.set(new Sample<>(sample), node.x(), node.y(), node.z(), useModuloCoords);
             if (isAlreadyCollapsed) {
                 pieceCollapsedCallListeners(node.x(), node.y(), node.z(), aPiece);
             }
@@ -121,20 +124,20 @@ public class Wave {
      * @return the pieces that could be collapsed at that position
      */
     @Contract(pure = true)
-    public @NotNull Sample getCollapseCandidatesAt(int x, int y, int z) {
-        final Sample newCandidates = new Sample();
-        final Sample currentCandidates = wave.get(x, y, z, useModuloCoords);
+    public @NotNull Sample<B> getCollapseCandidatesAt(int x, int y, int z) {
+        final Sample<B> newCandidates = new Sample<>();
+        final Sample<B> currentCandidates = wave.get(x, y, z, useModuloCoords);
         if (currentCandidates == null) return newCandidates;
-        final Iterator<Map.Entry<PieceNeighbors, Integer>> iter = currentCandidates.elementsAndWeightsIterator();
+        final Iterator<Map.Entry<PieceNeighbors<B>, Integer>> iter = currentCandidates.elementsAndWeightsIterator();
         while (iter.hasNext()) {
-            final Map.Entry<PieceNeighbors, Integer> entry = iter.next();
-            final PieceNeighbors currentCandidate = entry.getKey();
+            final Map.Entry<PieceNeighbors<B>, Integer> entry = iter.next();
+            final PieceNeighbors<B> currentCandidate = entry.getKey();
             final int currentCandidateWeight = entry.getValue();
             boolean isValidCandidate = true;
-            for (Map.Entry<Face, Piece> faceEntry : currentCandidate.entrySet()) {
+            for (Map.Entry<Face, Piece<B>> faceEntry : currentCandidate.entrySet()) {
                 final Face face = faceEntry.getKey();
-                final Piece expectedPiece = faceEntry.getValue();
-                final @Nullable Sample foundSample = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
+                final Piece<B> expectedPiece = faceEntry.getValue();
+                final @Nullable Sample<B> foundSample = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
                 if (foundSample == null) continue;
                 if (!(foundSample.centerPiecesContains(expectedPiece) && foundSample.acceptsAt(face.getOppositeFace(), currentCandidate.getCenterPiece()))) {
                     isValidCandidate = false;
@@ -151,8 +154,8 @@ public class Wave {
     /**
      * @return the collapsed {@link PieceNeighbors}
      */
-    private @NotNull PieceNeighbors collapse(int x, int y, int z) throws GenerationFailedException {
-        final Sample collapseCandidates = getCollapseCandidatesAt(x, y, z);
+    private @NotNull PieceNeighbors<B> collapse(int x, int y, int z) throws GenerationFailedException {
+        final Sample<B> collapseCandidates = getCollapseCandidatesAt(x, y, z);
 
         return collapseWithTheseCandidates(x, y, z, collapseCandidates);
     }
@@ -160,15 +163,15 @@ public class Wave {
     /**
      * @return the collapsed {@link PieceNeighbors}
      */
-    private @NotNull PieceNeighbors collapseWithTheseCandidates(int x, int y, int z, @NotNull Sample collapseCandidates) throws GenerationFailedException {
-        final PieceNeighbors collapsed;
+    private @NotNull PieceNeighbors<B> collapseWithTheseCandidates(int x, int y, int z, @NotNull Sample<B> collapseCandidates) throws GenerationFailedException {
+        final PieceNeighbors<B> collapsed;
         if (collapseCandidates.isEmpty()) {
             hasImpossibleStates = true;
             throw new GenerationFailedException("Encountered an impossible state");
         } else
             collapsed = Objects.requireNonNull(collapseCandidates.weightedChoose(getRandom(x, y, z)),
                     "weightedChoose() returned null");
-        final Sample newSample = new Sample(); // a sample with a size of 1
+        final Sample<B> newSample = new Sample<>(); // a sample with a size of 1
         newSample.add(collapsed);
         wave.set(newSample, x, y, z, useModuloCoords);
         lastChangedEntropies.push(new ObjectWithCoordinates<>(newSample, x, y, z));
@@ -179,11 +182,11 @@ public class Wave {
     /**
      * Should be called everytime an entropy is changed to 1.
      */
-    private void pieceCollapsed(int x, int y, int z, @NotNull PieceNeighbors collapsed) throws GenerationFailedException {
+    private void pieceCollapsed(int x, int y, int z, @NotNull PieceNeighbors<B> collapsed) throws GenerationFailedException {
         // collapsing a piece also forces the neighbors to have the right centerpiece
-        for (Map.Entry<Face, Piece> faceEntry : collapsed.entrySet()) {
+        for (Map.Entry<Face, Piece<B>> faceEntry : collapsed.entrySet()) {
             final Face face = faceEntry.getKey();
-            final Sample sampleAtThatFace = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
+            final Sample<B> sampleAtThatFace = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
             if (sampleAtThatFace == null) continue;
             if (sampleAtThatFace.retainAllWithCenterPiece(faceEntry.getValue())) {
                 if (sampleAtThatFace.isEmpty()) {
@@ -204,7 +207,7 @@ public class Wave {
     }
 
     private void propagateCollapseTo(int x, int y, int z) throws GenerationFailedException {
-        final Sample present = wave.getWithoutFill(x, y, z);
+        final Sample<B> present = wave.getWithoutFill(x, y, z);
         if (present == null) return;
         final int sizeBefore = present.size();
 
@@ -230,7 +233,7 @@ public class Wave {
         return wave.get(x, y, z).size() == 1;
     }
 
-    private Stack<ObjectWithCoordinates<Sample>> lastChangedEntropies;
+    private Stack<ObjectWithCoordinates<Sample<B>>> lastChangedEntropies;
 
     /**
      * This searches a node (coordinates) a piece with a low entropy (but strictly above 1, otherwise that means the wave
@@ -251,11 +254,11 @@ public class Wave {
         Random random = getRandom(lastX, lastY, lastZ);
         int lowestEntropy = Integer.MAX_VALUE;
         final Set<Coords> lowestEntropyNodes = new HashSet<>(); // this is a list so every piece has the same chance to be chosen
-        final Iterator<ObjectWithCoordinates<Sample>> iterator;
+        final Iterator<ObjectWithCoordinates<Sample<B>>> iterator;
         iterator = totalSearch ? wave.iterator() : lastChangedEntropies.iterator();
         while (iterator.hasNext()) {
-            ObjectWithCoordinates<Sample> node = iterator.next();
-            final Sample object = node.object();
+            ObjectWithCoordinates<Sample<B>> node = iterator.next();
+            final Sample<B> object = node.object();
             if (!totalSearch) {
                 // using last changed entropies, that means some entropies might be wrong
                 //noinspection ConstantConditions
@@ -285,12 +288,12 @@ public class Wave {
         return iter.next();
     }
 
-    public void registerPieceCollapseListener(PieceCollapseListener listener) {
+    public void registerPieceCollapseListener(PieceCollapseListener<B> listener) {
         pieceCollapseListeners.add(Objects.requireNonNull(listener));
     }
 
-    private void pieceCollapsedCallListeners(int pieceX, int pieceY, int pieceZ, PieceNeighbors piece) {
-        for (PieceCollapseListener listener : pieceCollapseListeners) {
+    private void pieceCollapsedCallListeners(int pieceX, int pieceY, int pieceZ, PieceNeighbors<B> piece) {
+        for (PieceCollapseListener<B> listener : pieceCollapseListeners) {
             listener.onCollapse(pieceX, pieceY, pieceZ, piece);
         }
     }
@@ -301,14 +304,14 @@ public class Wave {
      * coordinates in the parameters.
      */
     @FunctionalInterface
-    public interface PieceCollapseListener {
-        void onCollapse(int pieceX, int pieceY, int pieceZ, PieceNeighbors piece);
+    public interface PieceCollapseListener<B> {
+        void onCollapse(int pieceX, int pieceY, int pieceZ, PieceNeighbors<B> piece);
     }
 
     public static class GenerationFailedException extends Exception {
         // TODO: make GenerationFailedException specify some improvements that could be made on the dataset (adding
         //       one or more (probably just one since the generation stops at the first impossible state)
-        //       PieceNeighbors) to make it easier to collapse the wave.
+        //       PieceNeighbors<B>) to make it easier to collapse the wave.
         public GenerationFailedException(String message) {
             super(message);
         }

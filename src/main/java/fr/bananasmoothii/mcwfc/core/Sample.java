@@ -8,11 +8,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Iterator;
 import java.util.Map;
 
-public class Sample extends WeightedSet<PieceNeighbors> {
+/**
+ * @param <B> the type of the blocks in the {@link Piece}s. For example, in bukkit, this is {@link org.bukkit.block.data.BlockData}
+ */
+public class Sample<B> extends WeightedSet<PieceNeighbors<B>> {
     public Sample() {
     }
 
-    public Sample(WeightedSet<PieceNeighbors> other) {
+    public Sample(WeightedSet<PieceNeighbors<B>> other) {
         super(other);
     }
 
@@ -20,9 +23,9 @@ public class Sample extends WeightedSet<PieceNeighbors> {
      * Filters this {@link Sample} and returns only the {@link PieceNeighbors} having this
      * {@link Piece} as {@link PieceNeighbors#getCenterPiece() center piece}.
      */
-    public @NotNull Sample getNeighborsFor(@NotNull Piece piece) {
-        Sample result = new Sample();
-        for (PieceNeighbors neighbors : this) {
+    public @NotNull Sample<B> getNeighborsFor(@NotNull Piece<B> piece) {
+        Sample<B> result = new Sample<>();
+        for (PieceNeighbors<B> neighbors : this) {
             if (neighbors.getCenterPiece().equals(piece)) {
                 result.add(neighbors);
             }
@@ -34,20 +37,20 @@ public class Sample extends WeightedSet<PieceNeighbors> {
      * @return all centerpieces of all {@link PieceNeighbors}
      */
     @Contract(pure = true)
-    public @NotNull WeightedSet<Piece> getCenterPieces() {
-        WeightedSet<Piece> result = new WeightedSet<>();
-        final Iterator<Map.Entry<PieceNeighbors, Integer>> iter = elementsAndWeightsIterator();
+    public @NotNull WeightedSet<Piece<B>> getCenterPieces() {
+        WeightedSet<Piece<B>> result = new WeightedSet<>();
+        final Iterator<Map.Entry<PieceNeighbors<B>, Integer>> iter = elementsAndWeightsIterator();
         while (iter.hasNext()) {
-            final Map.Entry<PieceNeighbors, Integer> entry = iter.next();
+            final Map.Entry<PieceNeighbors<B>, Integer> entry = iter.next();
             result.add(entry.getKey().getCenterPiece(), entry.getValue());
         }
         return result;
     }
 
     @Contract(pure = true)
-    public boolean centerPiecesContains(Piece piece) {
-        for (PieceNeighbors pieceNeighbors : this) {
-            final Piece centerPiece = pieceNeighbors.getCenterPiece();
+    public boolean centerPiecesContains(Piece<B> piece) {
+        for (PieceNeighbors<B> pieceNeighbors : this) {
+            final Piece<B> centerPiece = pieceNeighbors.getCenterPiece();
             if (centerPiece.equals(piece)) {
                 return true;
             }
@@ -55,11 +58,11 @@ public class Sample extends WeightedSet<PieceNeighbors> {
         return false;
     }
 
-    public boolean retainAllWithCenterPiece(@NotNull Piece centerPiece) {
+    public boolean retainAllWithCenterPiece(@NotNull Piece<B> centerPiece) {
         boolean changed = false;
-        Iterator<PieceNeighbors> iterator = iterator();
+        Iterator<PieceNeighbors<B>> iterator = iterator();
         while (iterator.hasNext()) {
-            PieceNeighbors neighbors = iterator.next();
+            PieceNeighbors<B> neighbors = iterator.next();
             if (!neighbors.getCenterPiece().equals(centerPiece)) {
                 iterator.remove();
                 changed = true;
@@ -71,8 +74,8 @@ public class Sample extends WeightedSet<PieceNeighbors> {
     /**
      * @return true if there is at least one {@link PieceNeighbors} having this {@link Piece} at that {@link Face}
      */
-    public boolean acceptsAt(@NotNull Face face, @NotNull Piece piece) {
-        for (PieceNeighbors neighbors : this) {
+    public boolean acceptsAt(@NotNull Face face, @NotNull Piece<B> piece) {
+        for (PieceNeighbors<B> neighbors : this) {
             if (neighbors.get(face).equals(piece)) {
                 return true;
             }
@@ -80,7 +83,7 @@ public class Sample extends WeightedSet<PieceNeighbors> {
         return false;
     }
 
-    public ImmutableSample immutable() {
-        return new ImmutableSample(this);
+    public ImmutableSample<B> immutable() {
+        return new ImmutableSample<>(this);
     }
 }

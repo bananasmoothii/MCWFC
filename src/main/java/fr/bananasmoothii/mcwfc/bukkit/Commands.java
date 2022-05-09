@@ -16,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +32,7 @@ import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.sendMessage;
 @CommandAlias("mcwfc")
 @CommandPermission("mcwfc.use")
 public class Commands extends BaseCommand {
-    private static final Map<Player, Sample> pieceSets = new WeakHashMap<>();
+    private static final Map<Player, Sample<BlockData>> pieceSets = new WeakHashMap<>();
     private static boolean INCREMENTAL_GENERATION = false; // CAUTION: very laggy when true
 
     @Subcommand("generate dataset")
@@ -79,7 +80,7 @@ public class Commands extends BaseCommand {
                 sendMessage(player, "§cUnable to get your current selection");
                 return;
             }
-            final MCVirtualSpace space = new MCVirtualSpace(bounds, Material.AIR.createBlockData());
+            final MCVirtualSpace<BlockData> space = new MCVirtualSpace<>(bounds, Material.AIR.createBlockData());
             final World playerWorld = player.getWorld();
             sendMessage(player, "Generating dataset... (this may take a while)");
             for (int x = bounds.xMin(); x <= bounds.xMax(); x++) {
@@ -90,7 +91,7 @@ public class Commands extends BaseCommand {
                 }
             }
 
-            final Sample dataSet = space.generatePieces(pieceSize, allowUpsideDown, useModuloCoordsTopAndBottom);
+            final Sample<BlockData> dataSet = space.generatePieces(pieceSize, allowUpsideDown, useModuloCoordsTopAndBottom);
             if (dataSet.size() > 0) {
                 pieceSets.put(player, dataSet);
                 sendMessage(player, "§aDone ! Dataset size: " + dataSet.size() + ". You can now run §n/mcwfc " +
@@ -110,7 +111,7 @@ public class Commands extends BaseCommand {
     @CommandCompletion("@nothing")
     public static void generate(Player player, String[] args) {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
-            Sample pieces = pieceSets.get(player);
+            Sample<BlockData> pieces = pieceSets.get(player);
             if (pieces == null) {
                 sendMessage(player, "§eYou have currently no piece set. You can generate one with /mcwfc generate " +
                         "dataset");
@@ -138,12 +139,12 @@ public class Commands extends BaseCommand {
             }
 
             final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
-            Wave wave = new Wave(pieces, bounds, useModuloCoords, seed);
+            Wave<BlockData> wave = new Wave<>(pieces, bounds, useModuloCoords, seed);
             final LocalSession playerSession = bukkitPlayer.getSession();
             if (INCREMENTAL_GENERATION)
                 wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
                         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
-                            final Piece centerPiece = piece.getCenterPiece();
+                            final Piece<BlockData> centerPiece = piece.getCenterPiece();
                             int xMin = pieceX * centerPiece.xSize;
                             int yMin = pieceY * centerPiece.ySize;
                             int zMin = pieceZ * centerPiece.zSize;
@@ -166,10 +167,10 @@ public class Commands extends BaseCommand {
             try {
                 wave.collapse();
                 if (!INCREMENTAL_GENERATION) {
-                    for (VirtualSpace.ObjectWithCoordinates<Sample> node : wave.getWave()) {
-                        Sample piecesAtNode = node.object();
+                    for (VirtualSpace.ObjectWithCoordinates<Sample<BlockData>> node : wave.getWave()) {
+                        Sample<BlockData> piecesAtNode = node.object();
                         if (piecesAtNode.isEmpty()) continue;
-                        Piece piece = piecesAtNode.peek().getCenterPiece();
+                        Piece<BlockData> piece = piecesAtNode.peek().getCenterPiece();
                         int xMin = node.x() * piece.xSize;
                         int yMin = node.y() * piece.ySize;
                         int zMin = node.z() * piece.zSize;
@@ -208,7 +209,7 @@ public class Commands extends BaseCommand {
     @Syntax("<piece number>")
     @CommandCompletion("@range:0-20")
     public static void dumpPiece(Player player, int pieceNumber) {
-        final Sample dataSet = pieceSets.get(player);
+        final Sample<BlockData> dataSet = pieceSets.get(player);
         if (dataSet == null) {
             sendMessage(player, "§eYou have currently no piece set. You can generate one with /mcwfc generate " +
                     "dataset");
@@ -218,11 +219,11 @@ public class Commands extends BaseCommand {
             sendMessage(player, "§cPiece number is too high. Try a number between 0 and " + (dataSet.size() - 1));
             return;
         }
-        final @NotNull Iterator<PieceNeighbors> iter = dataSet.iterator();
+        final @NotNull Iterator<PieceNeighbors<BlockData>> iter = dataSet.iterator();
         for (int i = 0; i < pieceNumber; i++) {
             iter.next();
         }
-        final PieceNeighbors piece = iter.next();
+        final PieceNeighbors<BlockData> piece = iter.next();
         final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
         final LocalSession playerSession = bukkitPlayer.getSession();
         final Location playerLocation = player.getLocation();
@@ -233,7 +234,7 @@ public class Commands extends BaseCommand {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
             try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc dumppiece")) {
                 placePiece(piece.getCenterPiece(), editSession, playerX, playerY, playerZ);
-                for (Map.Entry<Face, Piece> faceEntry : piece.entrySet()) {
+                for (Map.Entry<Face, Piece<BlockData>> faceEntry : piece.entrySet()) {
                     final Face face = faceEntry.getKey();
                     placePiece(faceEntry.getValue(), editSession,
                             playerX + face.getModX() * pieceSize, playerY + face.getModY() * pieceSize, playerZ + face.getModZ() * pieceSize);
@@ -245,7 +246,7 @@ public class Commands extends BaseCommand {
     }
 
     @Contract(pure = true)
-    private static void placePiece(final @NotNull Piece piece, final @NotNull EditSession editSession,
+    private static void placePiece(final @NotNull Piece<BlockData> piece, final @NotNull EditSession editSession,
                                    final int x, final int y, final int z) {
         for (int x1 = x; x1 < x + piece.xSize; x1++) {
             for (int y1 = y; y1 < y + piece.ySize; y1++) {

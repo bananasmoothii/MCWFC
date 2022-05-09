@@ -12,30 +12,31 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@link VirtualSpace} with minecraft blocks ({@link BlockData}. It provides some useful methods, mainly to generate
+ * A {@link VirtualSpace} with minecraft blocks ({@link B}). It provides some useful methods, mainly to generate
  * {@link Piece}s. This implementation does not allow {@code null} fills (see {@link VirtualSpace#setFill(Object)}.
  * @see #generatePieces(int, boolean, boolean)
+ * @param <B> the type of block in the space. For example, in bukkit, this is {@link BlockData}.
  */
 @SuppressWarnings("NullableProblems")
-public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
+public class MCVirtualSpace<B> extends VirtualSpace<@NotNull B> {
 
-    public MCVirtualSpace(@NotNull BlockData fill) {
+    public MCVirtualSpace(@NotNull B fill) {
         super();
         setFill(fill);
     }
 
-    public MCVirtualSpace(@NotNull VirtualSpace<@NotNull BlockData> propertiesIndicator) {
+    public MCVirtualSpace(@NotNull VirtualSpace<@NotNull B> propertiesIndicator) {
         super(propertiesIndicator);
         if (propertiesIndicator.getFill() == null)
             throw new NullPointerException("The propertiesIndicator cannot have a null fill value");
     }
 
-    public MCVirtualSpace(int xSize, int ySize, int zSize, @NotNull BlockData fill) {
+    public MCVirtualSpace(int xSize, int ySize, int zSize, @NotNull B fill) {
         super(xSize, ySize, zSize);
         setFill(fill);
     }
 
-    public MCVirtualSpace(@NotNull Bounds bounds, @NotNull BlockData fill) {
+    public MCVirtualSpace(@NotNull Bounds bounds, @NotNull B fill) {
         super(bounds);
         setFill(fill);
     }
@@ -45,9 +46,9 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      * cartesian faces as in {@link Face#isCartesian()}. This method doesn't allow putting pieces upside down.
      * @param pieceSize the size of each {@link Piece} in x, y and z directions
      * @return a {@link Sample}, the weight represents the number of times a piece was seen.
-     * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
+     * @throws NullPointerException if there is no {@link #setFill(Object) fill}.
      */
-    public Sample generatePieces(final int pieceSize) {
+    public Sample<B> generatePieces(final int pieceSize) {
         return generatePieces(pieceSize, false, true);
     }
 
@@ -62,17 +63,17 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      *                             vice-versa ({@code true}), or not ({code false}) ? If {@code false}, it will be almost
      *                             impossible to generate something higher in the {@link Wave}
      * @return a {@link Sample}, the weights in the sample represents the number of times a piece was seen.
-     * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
+     * @throws NullPointerException if there is no {@link #setFill(Object) fill}.
      */
-    public Sample generatePieces(final int pieceSize, final boolean allowUpsideDown,
+    public Sample<B> generatePieces(final int pieceSize, final boolean allowUpsideDown,
                                  final boolean useModuloCoordsTopAndBottom) {
-        Sample result = new Sample();
-        HashMap<Coords, Piece> piecesCache = new HashMap<>(); // used to keep the same reference for pieces with the exact same coords
+        Sample<B> result = new Sample<>();
+        HashMap<Coords, Piece<B>> piecesCache = new HashMap<>(); // used to keep the same reference for pieces with the exact same coords
         for (int x = xMin(); x <= xMax(); x++) {
             for (int y = yMin(); y <= yMax(); y++) {
                 for (int z = zMin(); z <= zMax(); z++) {
                     @SuppressWarnings("ConstantConditions") // useModuloCoords is true
-                    PieceNeighbors pieceNeighbors = new PieceNeighbors(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
+                    PieceNeighbors<B> pieceNeighbors = new PieceNeighbors<>(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
                     pieceNeighbors.put(Face.TOP, getPieceAt(new Coords(x, y + pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
                     pieceNeighbors.put(Face.BOTTOM, getPieceAt(new Coords(x, y - pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
                     pieceNeighbors.put(Face.WEST, getPieceAt(new Coords(x - pieceSize, y, z), pieceSize, true, piecesCache));
@@ -88,7 +89,7 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
     }
 
     /**
-     * You may use this method only if a fill was set with {@link #setFill(BlockData)}.
+     * You may use this method only if a fill was set with {@link #setFill(Object)}.
      * @param useModuloCoords if some coordinates are out of bounds, it will take them back in the bounds. This means
      *                        that if you have a list of 3 elements, it will reformat your coordinates modulo (%) 3.
      *                        For exemple, if you call element of index 5 in that list, you will get the element of index
@@ -97,13 +98,13 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      *                        {@link VirtualSpace#xInBounds(int)}
      * @return the piece of size pieceSize from x, y, z to x+pieceSize, y+pieceSize, z+pieceSize. It may only return
      * {@code null} if "useModuloCoords" is true
-     * @throws NullPointerException if there is no {@link #setFill(BlockData) fill}.
+     * @throws NullPointerException if there is no {@link #setFill(Object) fill}.
      */
-    public @Nullable Piece getPieceAt(final int x, final int y, final int z, final int pieceSize, final boolean useModuloCoords) {
-        BlockData fill = getFill();
+    public @Nullable Piece<B> getPieceAt(final int x, final int y, final int z, final int pieceSize, final boolean useModuloCoords) {
+        B fill = getFill();
 
         if (useModuloCoords) {
-            Piece piece = new Piece(pieceSize, fill);
+            Piece<B> piece = new Piece<>(pieceSize, fill);
             for (int ix = x; ix < x + pieceSize; ix++) {
                 for (int iy = y; iy < y + pieceSize; iy++) {
                     for (int iz = z; iz < z + pieceSize; iz++) {
@@ -119,7 +120,7 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
                 //throw new IllegalArgumentException("invalid coordinates for piece: " + x + ' ' + y + ' ' + z +
                 //        " in VirtualSpace of size " + getPrettyCoordinates());
 
-            Piece piece = new Piece(pieceSize, fill);
+            Piece<B> piece = new Piece<>(pieceSize, fill);
             for (int ix = x; ix < x + pieceSize; ix++) {
                 for (int iy = y; iy < y + pieceSize; iy++) {
                     for (int iz = z; iz < z + pieceSize; iz++) {
@@ -135,14 +136,14 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
      * Useful to keep same references for same pieces.
      * @see #getPieceAt(int, int, int, int, boolean)
      */
-    protected @Nullable Piece getPieceAt(final @NotNull Coords coords, final int pieceSize, final boolean useModuloCoords,
-                                        @NotNull Map<Coords, Piece> pieceCache) {
+    protected @Nullable Piece<B> getPieceAt(final @NotNull Coords coords, final int pieceSize, final boolean useModuloCoords,
+                                        @NotNull Map<Coords, Piece<B>> pieceCache) {
         return pieceCache.computeIfAbsent(coords,
                 coords1 -> getPieceAt(coords1.x(), coords1.y(), coords1.z(), pieceSize, useModuloCoords));
     }
 
     @Override
-    public MCVirtualSpace select(int xFrom, int yFrom, int zFrom, int xTo, int yTo, int zTo) {
+    public MCVirtualSpace<B> select(int xFrom, int yFrom, int zFrom, int xTo, int yTo, int zTo) {
         if (xFrom > xTo) {
             int swapper = xFrom;
             xFrom = xTo;
@@ -158,12 +159,12 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
             zFrom = zTo;
             zTo = swapper;
         }
-        MCVirtualSpace result = new MCVirtualSpace(getFill());
+        MCVirtualSpace<B> result = new MCVirtualSpace<>(getFill());
         result.setFill(getFill());
         for (int xi = xFrom; xi <= xTo; xi++) {
             for (int yi = yFrom; yi <= yTo; yi++) {
                 for (int zi = zFrom; zi <= zTo; zi++) {
-                    final BlockData element = getWithoutFill(xi, yi, zi);
+                    final B element = getWithoutFill(xi, yi, zi);
                     if (element != null) {
                         result.set(element, xi, yi, zi);
                     }
@@ -174,12 +175,12 @@ public class MCVirtualSpace extends VirtualSpace<@NotNull BlockData> {
     }
 
     @Override
-    public void setFill(@NotNull BlockData fill) {
+    public void setFill(@NotNull B fill) {
         super.setFill(Objects.requireNonNull(fill));
     }
 
     @Override
-    public @NotNull BlockData getFill() {
+    public @NotNull B getFill() {
         return Objects.requireNonNull(super.getFill());
     }
 }
