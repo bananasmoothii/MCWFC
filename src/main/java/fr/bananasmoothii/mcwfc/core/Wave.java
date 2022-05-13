@@ -239,24 +239,21 @@ public class Wave<B> {
         // collapsing a piece also forces the neighbors to have the right centerpiece
         for (Map.Entry<Face, Optional<Piece.Locked<B>>> faceEntry : collapsed.entrySet()) {
             final Face face = faceEntry.getKey();
+            if (!useModuloCoords && !currentGenerationBounds.contains(face.addTo(x, y, z))) continue;
             final Sample<B> sampleAtThatFace = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
-            if (sampleAtThatFace == null) continue;
             final Optional<Piece.Locked<B>> expectedPiece = faceEntry.getValue();
             if (expectedPiece.isPresent()) {
-                if (sampleAtThatFace.retainAllWithCenterPiece(expectedPiece.get())) {
+                if (sampleAtThatFace == null) {
+                    hasImpossibleStates = true;
+                    throw new GenerationFailedException("Encountered an impossible state at " + x + " " + y + " " + z);
+                } else if (sampleAtThatFace.retainAllWithCenterPiece(expectedPiece.get())) {
                     if (sampleAtThatFace.size() == 1) {
                         pieceCollapsed(x + face.getModX(), y + face.getModY(), z + face.getModZ(), sampleAtThatFace.peek());
-                    } else if (sampleAtThatFace.isEmpty() && (!useModuloCoords && currentGenerationBounds.contains(face.addTo(x, y, z)))) {
+                    } else if (sampleAtThatFace.isEmpty()) {
                         // do not throw an exception if the problem is outside the current bounds, and we don't use modulo coords
                         hasImpossibleStates = true;
                         throw new GenerationFailedException("Encountered an impossible state at " + x + " " + y + " " + z);
                     }
-                }
-            } else {
-                sampleAtThatFace.clear();
-                if (!useModuloCoords && currentGenerationBounds.contains(face.addTo(x, y, z))) {
-                    hasImpossibleStates = true;
-                    throw new GenerationFailedException("Encountered an impossible state at " + x + " " + y + " " + z);
                 }
             }
         }
@@ -388,6 +385,7 @@ public class Wave<B> {
             Wave.this.propagationTasks = propagationTasks;
             Wave.this.lastChangedEntropies = lastChangedEntropies;
             Wave.this.lastManuallyCollapsedPiece = lastManuallyCollapsedPiece;
+            waveRestoredCallListeners(wave);
         }
     }
 
@@ -449,14 +447,21 @@ public class Wave<B> {
         }
     }
 
+    private void waveRestoredCallListeners(VirtualSpace<Sample<B>> newWave) {
+        for (PieceCollapseListener<B> pieceCollapseListener : pieceCollapseListeners) {
+            pieceCollapseListener.onRestore(newWave);
+        }
+    }
+
     /**
      * A {@link FunctionalInterface} whose method is {@link #onCollapse(int, int, int, PieceNeighbors.Locked)}. It is called when a piece
      * of this {@link Wave} totally collapses, meaning there is only one state left. that piece is passed along with its
      * coordinates in the parameters.
      */
-    @FunctionalInterface
     public interface PieceCollapseListener<B> {
         void onCollapse(int pieceX, int pieceY, int pieceZ, PieceNeighbors.Locked<B> piece);
+
+        void onRestore(VirtualSpace<Sample<B>> newWave);
     }
 
     public static class GenerationFailedException extends Exception {

@@ -14,15 +14,15 @@ public record Bounds(int xMin, int yMin, int zMin, int xMax, int yMax, int zMax)
     }
 
     public int xSize() {
-        return xMax - xMin;
+        return xMax - xMin + 1;
     }
 
     public int ySize() {
-        return yMax - yMin;
+        return yMax - yMin + 1;
     }
 
     public int zSize() {
-        return zMax - zMin;
+        return zMax - zMin + 1;
     }
 
     public boolean contains(@NotNull Coords coords) {

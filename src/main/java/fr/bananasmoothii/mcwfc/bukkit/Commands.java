@@ -35,7 +35,7 @@ import static fr.bananasmoothii.mcwfc.bukkit.MCWFCPlugin.sendMessage;
 @CommandPermission("mcwfc.use")
 public class Commands extends BaseCommand {
     private static final Map<Player, Sample<BlockData>> pieceSets = new WeakHashMap<>();
-    private static boolean INCREMENTAL_GENERATION = false; // CAUTION: very laggy when true
+    private static boolean INCREMENTAL_GENERATION = true; // CAUTION: very laggy when true
 
     @Subcommand("generate dataset")
     @Syntax("<sample size> [allow upside down (default: false)] [use modulo coords for top and bottom (default: false)]")
@@ -146,7 +146,9 @@ public class Commands extends BaseCommand {
             final Wave<BlockData> wave = new Wave<>(pieces, bounds, useModuloCoords, seed);
             final LocalSession playerSession = bukkitPlayer.getSession();
             if (INCREMENTAL_GENERATION)
-                wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
+                wave.registerPieceCollapseListener(new Wave.PieceCollapseListener<BlockData>() {
+                    @Override
+                    public void onCollapse(final int pieceX, final int pieceY, final int pieceZ, PieceNeighbors.Locked<BlockData> piece) {
                         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
                             final Piece.Locked<BlockData> centerPiece = piece.getCenterPiece();
                             int xMin = pieceX * centerPiece.xSize;
@@ -155,17 +157,48 @@ public class Commands extends BaseCommand {
                             int xMax = (pieceX + 1) * centerPiece.xSize; // max coords are exclusive
                             int yMax = (pieceY + 1) * centerPiece.ySize;
                             int zMax = (pieceZ + 1) * centerPiece.zSize;
-                            try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc generate")) {
+                            try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer,
+                                    "mcwfc generate")) {
                                 for (int x = xMin, xInPiece = 0; x < xMax; x++, xInPiece++) {
                                     for (int y = yMin, yInPiece = 0; y < yMax; y++, yInPiece++) {
                                         for (int z = zMin, zInPiece = 0; z < zMax; z++, zInPiece++) {
-                                            editSession.setBlock(x, y, z, BukkitAdapter.adapt(centerPiece.get(xInPiece, yInPiece, zInPiece)));
+                                            editSession.setBlock(x, y, z,
+                                                    BukkitAdapter.adapt(centerPiece.get(xInPiece, yInPiece, zInPiece)));
                                         }
                                     }
                                 }
                                 //playerSession.remember(editSession);
                             }
-                        }));
+                        });
+                    }
+
+                    @Override
+                    public void onRestore(final VirtualSpace<Sample<BlockData>> newWave) {
+                        Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
+                            for (VirtualSpace.ObjectWithCoordinates<Sample<BlockData>> node : newWave) {
+                                Sample<BlockData> piecesAtNode = node.object();
+                                if (piecesAtNode.isEmpty()) continue;
+                                Piece.Locked<BlockData> piece = piecesAtNode.peek().getCenterPiece();
+                                int xMin = node.x() * piece.xSize;
+                                int yMin = node.y() * piece.ySize;
+                                int zMin = node.z() * piece.zSize;
+                                int xMax = (node.x() + 1) * piece.xSize; // max coords are exclusive
+                                int yMax = (node.y() + 1) * piece.ySize;
+                                int zMax = (node.z() + 1) * piece.zSize;
+                                try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc generate")) {
+                                    for (int x = xMin, xInPiece = 0; x < xMax; x++, xInPiece++) {
+                                        for (int y = yMin, yInPiece = 0; y < yMax; y++, yInPiece++) {
+                                            for (int z = zMin, zInPiece = 0; z < zMax; z++, zInPiece++) {
+                                                editSession.setBlock(x, y, z, BukkitAdapter.adapt(piece.get(xInPiece, yInPiece, zInPiece)));
+                                            }
+                                        }
+                                    }
+                                    playerSession.remember(editSession);
+                                }
+                            }
+                        });
+                    }
+                });
 
             sendMessage(player, "Generating... (this may take a while)");
             final BukkitTask playerNotifyTask = Bukkit.getScheduler().runTaskTimerAsynchronously(MCWFCPlugin.inst(), () -> {
