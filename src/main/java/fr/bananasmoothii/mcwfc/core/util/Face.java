@@ -248,6 +248,10 @@ public enum Face {
         return getWithMods(-modX, -modY, -modZ);
     }
 
+    public @NotNull Coords addTo(int x, int y, int z) {
+        return new Coords(x + modX, y + modY, z + modZ);
+    }
+
     /**
      * @return a rotated version by <i>angle</i> degrees along the X axis
      */

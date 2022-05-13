@@ -165,7 +165,7 @@ public class Commands extends BaseCommand {
 
             sendMessage(player, "Generating... (this may take a while)");
             try {
-                wave.collapse();
+                wave.collapseAll();
                 if (!INCREMENTAL_GENERATION) {
                     for (VirtualSpace.ObjectWithCoordinates<Sample<BlockData>> node : wave.getWave()) {
                         Sample<BlockData> piecesAtNode = node.object();

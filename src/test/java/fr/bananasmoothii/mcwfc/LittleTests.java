@@ -217,11 +217,11 @@ class LittleTests {
 
     @Test
     @Order(11)
-    void getCollapseCandidates() {
+    void getCollapseCandidates() throws Wave.GenerationFailedException {
         if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
         Wave<BImpl> wave = new Wave<>(pieceSet, bounds);
-        wave.fillWithPossibleStates();
+        wave.fillWithPossibleStates(wave.getWave().getBounds());
         assertEquals(pieceSet.size(), wave.getCollapseCandidatesAt(5, 5, 5).size(),
                 "At the beginning, every piece should be a collapse candidate");
     }
@@ -258,7 +258,7 @@ class LittleTests {
             try {
                 final Wave<BImpl> wave = new Wave<>(sample, bounds);
                 System.out.println("Collapsing the wave with modulo coords, try " + i);
-                wave.collapse();
+                wave.collapseAll();
                 System.out.println("Yay, the wave has collapsed!");
                 //assertFalse(wave.hasImpossibleStates(), "The wave has impossible states");
                 if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states");
@@ -291,12 +291,28 @@ class LittleTests {
     @Order(13)
     void waveFunctionCollapseWithoutModuloCoords() {
         if (pieceSet == null) generatePieces();
-        final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
-        for (int i = 0; i < 4; i++) {
+        final Bounds bounds = new Bounds(0, 0, 0, 4, 0, 2);
+        final MCVirtualSpace<BImpl> sampleSource = new MCVirtualSpace<>(bounds, AIR);
+        /* Making a little 2D path with stone at the corners:
+         * - - - - -
+         * O S - S O
+         * - O O O -
+         * O: LEAVES (oak)
+         * S: STONE
+         * -: AIR
+         */
+        sampleSource.set(LEAVES, 0, 0, 1);
+        sampleSource.set(STONE, 1, 0, 1);
+        sampleSource.set(LEAVES, 1, 0, 2);
+        sampleSource.set(LEAVES, 2, 0, 2);
+        sampleSource.set(LEAVES, 3, 0, 2);
+        sampleSource.set(STONE, 3, 0, 1);
+        sampleSource.set(LEAVES, 4, 0, 1);
+        for (int i = 0; i < 8; i++) {
             try {
-                Wave<BImpl> wave = new Wave<>(pieceSet, bounds, false);
+                Wave<BImpl> wave = new Wave<>(sampleSource.generatePieces(1), bounds, false);
                 System.out.println("Collapsing the wave without modulo coords, try " + i);
-                wave.collapse();
+                wave.collapseAll();
                 System.out.println("Yay, the wave has collapsed!");
                 //assertFalse(wave.hasImpossibleStates(), "The wave has impossible states");
                 if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states");
@@ -306,7 +322,7 @@ class LittleTests {
                 e.printStackTrace();
             }
         }
-        //fail("The wave has failed to collapse after 4 attempts");
+        fail("The wave has failed to collapse after 8 attempts");
     }
 
     @Test

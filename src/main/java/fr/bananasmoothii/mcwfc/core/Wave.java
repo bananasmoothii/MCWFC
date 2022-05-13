@@ -26,7 +26,6 @@ public class Wave<B> {
     private final long seed;
     private final List<@NotNull PieceCollapseListener<B>> pieceCollapseListeners = new ArrayList<>();
     public final boolean useModuloCoords;
-    private boolean isCollapsed = false;
     private boolean hasImpossibleStates = false;
 
     public Wave(@NotNull Sample<B> sample, @NotNull Bounds bounds) {
@@ -52,6 +51,10 @@ public class Wave<B> {
         return wave;
     }
 
+    public @NotNull Random getRandom(@NotNull Coords coords) {
+        return getRandom(coords.x(), coords.y(), coords.z());
+    }
+
     public @NotNull Random getRandom(int pieceX, int pieceY, int pieceZ) {
         // yes, we are creating a new Random for each generating piece, but this is needed in order to have the same piece
         // for the same seed at the same coords
@@ -63,59 +66,67 @@ public class Wave<B> {
     /**
      * Automatically collapses the hole {@link Wave}. Does nothing if the {@link Wave} is already collapsed.
      */
-    public void collapse() throws GenerationFailedException {
-        if (isCollapsed) return;
-
-        fillWithPossibleStates();
+    public void collapseAll() throws GenerationFailedException {
+        collapseInBounds(wave.getBounds());
+    }
+    
+    public void collapseInBounds(final @NotNull Bounds bounds) throws GenerationFailedException {
+        fillWithPossibleStates(bounds);
 
         final Random random0 = getRandom(0, 0, 0);
-        lastChangedEntropies = new Stack<>();
-        int lastX = random0.nextInt(wave.xMin(), wave.xMax() + 1);
-        int lastY = random0.nextInt(wave.yMin(), wave.yMax() + 1);
-        int lastZ = random0.nextInt(wave.zMin(), wave.zMax() + 1);
+        lastChangedEntropies = new ArrayDeque<>();
+        int lastX = random0.nextInt(bounds.xMin(), bounds.xMax() + 1);
+        int lastY = random0.nextInt(bounds.yMin(), bounds.yMax() + 1);
+        int lastZ = random0.nextInt(bounds.zMin(), bounds.zMax() + 1);
         while (true) {
-            // choose a random node
-            final Coords node = chooseLowEntropyNode(lastX, lastY, lastZ);
-            if (node == null) {
-                // finished
-                isCollapsed = true;
-                lastChangedEntropies = null;
-                break;
-            }
-            //final Random random = getRandom(node.x(), node.y(), node.z());
-            collapse(node.x(), node.y(), node.z());
-            propagateCollapseFrom(node.x(), node.y(), node.z());
+            // compute all propagation tasks (fillWithPossibleStates() might have added some)
             while (!propagationTasks.isEmpty()) {
                 final Set<Coords> propagationTasksCopy = new HashSet<>(propagationTasks);
                 propagationTasks.clear();
                 for (Coords propagationTask : propagationTasksCopy) {
+                    if (! bounds.contains(propagationTask)) continue;
                     propagateCollapseTo(propagationTask.x(), propagationTask.y(), propagationTask.z());
                 }
-                /*
-                final ArrayList<Face> faces = new ArrayList<>(Face.getCartesianFaces());
-                Collections.shuffle(faces, random);
-                for (Face cartesianFace : faces) {
-                    for (Pair<Coords, Face> propagationTask : propagationTasksCopy) {
-                        if (propagationTask.b() != cartesianFace) continue;
-                        propagateCollapseFrom(propagationTask.a().x(), propagationTask.a().y(), propagationTask.a().z());
-                    }
-                }
-
-                 */
             }
+            // choose a random node
+            final Coords node = chooseLowEntropyNode(lastX, lastY, lastZ);
+            if (node == null) {
+                // finished
+                lastChangedEntropies = null;
+                break;
+            }
+            // collapse the node
+            collapse(node.x(), node.y(), node.z());
+            propagateCollapseLaterFrom(node.x(), node.y(), node.z());
         }
     }
 
     /**
-     * Fills the wave with all possible states for each piece. You probably want to use {@link #collapse()} instead.
+     * Fills the wave with all possible states for each piece. You probably want to use {@link #collapseInBounds(Bounds)} instead.
      */
-    public void fillWithPossibleStates() {
-        boolean isAlreadyCollapsed = sample.size() <= 1;
+    public void fillWithPossibleStates(final @NotNull Bounds bounds) throws GenerationFailedException {
+        if (sample.isEmpty()) throw new GenerationFailedException("Invalid sample");
+        boolean isAlreadyCollapsed = sample.size() == 1;
         final PieceNeighbors.Locked<B> aPiece = sample.iterator().next();
-        for (ObjectWithCoordinates<Sample<B>> node : wave) {
-            wave.set(new Sample<>(sample), node.x(), node.y(), node.z(), useModuloCoords);
+        for (Coords node : bounds) {
+            wave.set(new Sample<>(sample), node.x(), node.y(), node.z());
             if (isAlreadyCollapsed) {
                 pieceCollapsedCallListeners(node.x(), node.y(), node.z(), aPiece);
+            }
+        }
+        if (!isAlreadyCollapsed) {
+            // remove already impossible states
+            for (Coords coords : bounds) {
+                final int x = coords.x(),
+                          y = coords.y(),
+                          z = coords.z();
+                final Sample<B> candidates = getCollapseCandidatesAt(x, y, z);
+                if (candidates.isEmpty()) throw new GenerationFailedException("No candidates at " + coords +
+                        ": your sample is invalid");
+                if (candidates.size() <= sample.size()) {
+                    wave.set(candidates, x, y, z);
+                    propagateCollapseLaterFrom(x, y, z);
+                }
             }
         }
     }
@@ -138,10 +149,17 @@ public class Wave<B> {
                 final Face face = faceEntry.getKey();
                 final Piece.Locked<B> expectedPiece = faceEntry.getValue();
                 final @Nullable Sample<B> foundSample = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
-                if (foundSample == null) continue;
-                if (!(foundSample.centerPiecesContains(expectedPiece) && foundSample.acceptsAt(face.getOppositeFace(), currentCandidate.getCenterPiece()))) {
-                    isValidCandidate = false;
-                    break;
+                if (foundSample == null) {
+                    if (! useModuloCoords) continue;
+                    if (expectedPiece != null) {
+                        isValidCandidate = false;
+                        break;
+                    }
+                } else {
+                    if (!(foundSample.centerPiecesContains(expectedPiece) && foundSample.acceptsAt(face.getOppositeFace(), currentCandidate.getCenterPiece()))) {
+                        isValidCandidate = false;
+                        break;
+                    }
                 }
             }
             if (isValidCandidate) {
@@ -156,7 +174,6 @@ public class Wave<B> {
      */
     private @NotNull PieceNeighbors.Locked<B> collapse(int x, int y, int z) throws GenerationFailedException {
         final Sample<B> collapseCandidates = getCollapseCandidatesAt(x, y, z);
-
         return collapseWithTheseCandidates(x, y, z, collapseCandidates);
     }
 
@@ -174,7 +191,8 @@ public class Wave<B> {
         final Sample<B> newSample = new Sample<>(); // a sample with a size of 1
         newSample.add(collapsed);
         wave.set(newSample, x, y, z, useModuloCoords);
-        lastChangedEntropies.push(new ObjectWithCoordinates<>(newSample, x, y, z));
+        lastChangedEntropies.addLast(new Coords(x, y, z));
+        lastManuallyCollapsedPiece = new Coords(x, y, z);
         pieceCollapsed(x, y, z, collapsed);
         return collapsed;
     }
@@ -200,9 +218,12 @@ public class Wave<B> {
         pieceCollapsedCallListeners(x, y, z, collapsed);
     }
 
-    private void propagateCollapseFrom(int x, int y, int z) throws GenerationFailedException {
+    /**
+     * This doesn't modify the wave, it just adds propagation tasks to {@link #propagationTasks}.
+     */
+    private void propagateCollapseLaterFrom(int x, int y, int z) {
         for (Face cartesianFace : Face.getCartesianFaces()) {
-            propagateCollapseTo(x + cartesianFace.getModX(), y + cartesianFace.getModY(), z + cartesianFace.getModZ());
+            propagationTasks.add(cartesianFace.addTo(x, y, z));
         }
     }
 
@@ -220,7 +241,7 @@ public class Wave<B> {
         } else if (present.size() == 1) {
             pieceCollapsed(x, y, z, present.peek());
         }
-        lastChangedEntropies.push(new ObjectWithCoordinates<>(present, x, y, z));
+        entropyChanged(x, y, z);
         for (Face cartesianFace : Face.getCartesianFaces()) {
             propagationTasks.add(new Coords(x + cartesianFace.getModX(), y + cartesianFace.getModY(), z + cartesianFace.getModZ()));
         }
@@ -228,42 +249,58 @@ public class Wave<B> {
 
     private final Set<Coords> propagationTasks = new HashSet<>();
 
-    @SuppressWarnings("ConstantConditions")
-    public boolean nodeIsCollapsed(int x, int y, int z) {
-        return wave.get(x, y, z).size() == 1;
+    private Deque<Coords> lastChangedEntropies;
+    
+    private @Nullable Coords lastManuallyCollapsedPiece = null;
+
+    private void entropyChanged(int x, int y, int z) {
+        final Coords coords = new Coords(x, y, z);
+        lastChangedEntropies.remove(coords);
+        lastChangedEntropies.addLast(coords);
     }
 
-    private Stack<ObjectWithCoordinates<Sample<B>>> lastChangedEntropies;
-
     /**
-     * This searches a node (coordinates) a piece with a low entropy (but strictly above 1, otherwise that means the wave
-     * has collapsed) among the last changed entropies
+     * This searches a node ({@link Coords}) with a low entropy (but strictly above 1, otherwise that means the wave
+     * has collapsed) among the latest changed entropies
      * @return null if the wave has collapsed
      */
+    @Contract(pure = true)
     private @Nullable Coords chooseLowEntropyNode(int lastX, int lastY, int lastZ) {
-        return chooseLowEntropyNode(lastX, lastY, lastZ, false);
-    }
-
-    /**
-     * This searches a node (coordinates) with a low entropy (but strictly above 1, otherwise that means the wave
-     * has collapsed) among the last changed entropies
-     * @param totalSearch if true, the search is done on the whole wave, otherwise only on the last changed entropies
-     * @return null if the wave has collapsed
-     */
-    private @Nullable Coords chooseLowEntropyNode(int lastX, int lastY, int lastZ, boolean totalSearch) {
         Random random = getRandom(lastX, lastY, lastZ);
         int lowestEntropy = Integer.MAX_VALUE;
         final Set<Coords> lowestEntropyNodes = new HashSet<>(); // this is a list so every piece has the same chance to be chosen
-        final Iterator<ObjectWithCoordinates<Sample<B>>> iterator;
-        iterator = totalSearch ? wave.iterator() : lastChangedEntropies.iterator();
+        final Iterator<Coords> iterator = lastChangedEntropies.descendingIterator();
         while (iterator.hasNext()) {
-            ObjectWithCoordinates<Sample<B>> node = iterator.next();
-            final Sample<B> object = node.object();
-            if (!totalSearch) {
-                // using last changed entropies, that means some entropies might be wrong
-                //noinspection ConstantConditions
-                if (wave.get(node.coords()).size() <= 1) continue;
+            Coords node = iterator.next();
+            final Sample<B> sample = wave.get(node);
+            //noinspection ConstantConditions
+            if (sample.size() <= 1) continue;
+            if (sample.size() < lowestEntropy) {
+                lowestEntropy = sample.size();
+                lowestEntropyNodes.clear();
+                lowestEntropyNodes.add(node);
+            } else if (sample.size() == lowestEntropy) {
+                lowestEntropyNodes.add(node);
             }
+        }
+        if (lowestEntropyNodes.isEmpty()) {
+            return chooseLowEntropyNodeTotalSearch(lastX, lastY, lastZ);
+        }
+        return getClosestNode(lowestEntropyNodes);
+    }
+
+    /**
+     * This searches a node ({@link Coords}) with a low entropy (but strictly above 1, otherwise that means the wave
+     * has collapsed) among the <strong>the hole wave</strong> (not among the last changed entropies)
+     * @return null if the wave has collapsed
+     */
+    @Contract(pure = true)
+    private @Nullable Coords chooseLowEntropyNodeTotalSearch(int lastX, int lastY, int lastZ) {
+        Random random = getRandom(lastX, lastY, lastZ);
+        int lowestEntropy = Integer.MAX_VALUE;
+        final Set<Coords> lowestEntropyNodes = new HashSet<>(); // this is a list so every piece has the same chance to be chosen
+        for (ObjectWithCoordinates<Sample<B>> node : wave) {
+            final Sample<B> object = node.object();
             if (1 < object.size() && object.size() < lowestEntropy) {
                 lowestEntropy = object.size();
                 lowestEntropyNodes.clear();
@@ -272,20 +309,34 @@ public class Wave<B> {
                 lowestEntropyNodes.add(node.coords());
             }
         }
-        if (lowestEntropyNodes.isEmpty()) {
-            if (!totalSearch) {
-                return chooseLowEntropyNode(lastX, lastY, lastZ, true);
-            } else {
-                return null;
+        return getClosestNode(lowestEntropyNodes);
+    }
+    
+    @Contract(pure = true)
+    private @Nullable Coords getClosestNode(@NotNull Collection<Coords> nodes) {
+        if (nodes.isEmpty()) return null;
+        if (lastManuallyCollapsedPiece != null) {
+            final List<Coords> lowestEntropyNodes = new ArrayList<>(); // this is a list so every piece has the same chance to be chosen
+            final double lowestEntropyDistance = Double.MAX_VALUE;
+            for (Coords node : nodes) {
+                final double distance = lastManuallyCollapsedPiece.distanceFrom(node);
+                if (distance < lowestEntropyDistance) {
+                    lowestEntropyNodes.clear();
+                    lowestEntropyNodes.add(node);
+                } else if (distance == lowestEntropyDistance) {
+                    lowestEntropyNodes.add(node);
+                }
             }
+            if (lowestEntropyNodes.size() == 1) return lowestEntropyNodes.get(0);
+            return lowestEntropyNodes.get(getRandom(lastManuallyCollapsedPiece).nextInt(lowestEntropyNodes.size()));
+        } else {
+            return nodes.iterator().next();
         }
-        // returning a random element
-        final int index = random.nextInt(lowestEntropyNodes.size());
-        final Iterator<Coords> iter = lowestEntropyNodes.iterator();
-        for (int i = 0; i < index; i++) {
-            iter.next();
-        }
-        return iter.next();
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public boolean nodeIsCollapsed(int x, int y, int z) {
+        return wave.get(x, y, z).size() == 1;
     }
 
     public void registerPieceCollapseListener(PieceCollapseListener<B> listener) {

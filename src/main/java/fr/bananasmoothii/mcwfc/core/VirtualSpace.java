@@ -7,7 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -410,40 +409,9 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
         return result;
     }
 
-    /**
-     * This iterator just gives all valid coordinates.
-     */
-    public Iterator<Coords> coordsIterator() {
-        return new Iterator<>() {
-            private int currentX = xMin, currentY = yMin, currentZ = zMin;
-
-            @Override
-            @Contract(pure = true)
-            public boolean hasNext() {
-                return currentZ <= zMax && currentY <= yMax && currentX <= xMax;
-            }
-
-            @Override
-            public Coords next() {
-                Coords element = new Coords(currentX, currentY, currentZ);
-                if (++currentZ > zMax) {
-                    currentZ = zMin;
-                    currentY++;
-                    if (currentY > yMax) {
-                        currentY = yMin;
-                        currentX++;
-                        if (currentX > xMax && currentY > yMax && currentZ > zMax)
-                            throw new NoSuchElementException("indexes above maximum");
-                    }
-                }
-                return element;
-            }
-        };
-    }
-
     public Iterator<ObjectWithCoordinates<T>> iteratorWithoutFill() {
         return new Iterator<>() {
-            private final Iterator<Coords> iterator = coordsIterator();
+            private final Iterator<Coords> iterator = getBounds().iterator();
 
             @Override
             public boolean hasNext() {
@@ -466,7 +434,7 @@ public class VirtualSpace<T> implements Iterable<VirtualSpace.ObjectWithCoordina
     @Override
     public Iterator<ObjectWithCoordinates<T>> iterator() {
         return new Iterator<>() {
-            private final Iterator<Coords> iterator = coordsIterator();
+            private final Iterator<Coords> iterator = getBounds().iterator();
 
             @Override
             public boolean hasNext() {
