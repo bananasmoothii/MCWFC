@@ -12,14 +12,13 @@ import java.util.Iterator;
 public class ImmutableSample<B> extends Sample<B> {
 
     public ImmutableSample(@NotNull Sample<B> c) {
-        for (PieceNeighbors<B> c1 : c) {
-            //noinspection UseBulkOperation
+        for (PieceNeighbors.Locked<B> c1 : c) {
             super.add(c1);
         }
     }
 
     @Override
-    public boolean add(@NotNull PieceNeighbors<B> pieceNeighborsPossibilities) {
+    public boolean add(@NotNull PieceNeighbors.Locked<B> pieceNeighborsPossibilities) {
         throw new UnsupportedOperationException("tried to modify an ImmutableSample");
     }
 
@@ -44,10 +43,10 @@ public class ImmutableSample<B> extends Sample<B> {
     }
 
     @Override
-    public @NotNull Iterator<PieceNeighbors<B>> iterator() {
+    public @NotNull Iterator<PieceNeighbors.Locked<B>> iterator() {
         // not using directly map.values().iterator() as it has a remove() method
         return new Iterator<>() {
-            private final Iterator<PieceNeighbors<B>> iterator = ImmutableSample.super.iterator();
+            private final Iterator<PieceNeighbors.Locked<B>> iterator = ImmutableSample.super.iterator();
 
             @Override
             public boolean hasNext() {
@@ -55,7 +54,7 @@ public class ImmutableSample<B> extends Sample<B> {
             }
 
             @Override
-            public PieceNeighbors<B> next() {
+            public PieceNeighbors.Locked<B> next() {
                 return iterator.next();
             }
         };

@@ -144,7 +144,7 @@ public class Commands extends BaseCommand {
             if (INCREMENTAL_GENERATION)
                 wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
                         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
-                            final Piece<BlockData> centerPiece = piece.getCenterPiece();
+                            final Piece.Locked<BlockData> centerPiece = piece.getCenterPiece();
                             int xMin = pieceX * centerPiece.xSize;
                             int yMin = pieceY * centerPiece.ySize;
                             int zMin = pieceZ * centerPiece.zSize;
@@ -170,7 +170,7 @@ public class Commands extends BaseCommand {
                     for (VirtualSpace.ObjectWithCoordinates<Sample<BlockData>> node : wave.getWave()) {
                         Sample<BlockData> piecesAtNode = node.object();
                         if (piecesAtNode.isEmpty()) continue;
-                        Piece<BlockData> piece = piecesAtNode.peek().getCenterPiece();
+                        Piece.Locked<BlockData> piece = piecesAtNode.peek().getCenterPiece();
                         int xMin = node.x() * piece.xSize;
                         int yMin = node.y() * piece.ySize;
                         int zMin = node.z() * piece.zSize;
@@ -219,11 +219,11 @@ public class Commands extends BaseCommand {
             sendMessage(player, "§cPiece number is too high. Try a number between 0 and " + (dataSet.size() - 1));
             return;
         }
-        final @NotNull Iterator<PieceNeighbors<BlockData>> iter = dataSet.iterator();
+        final @NotNull Iterator<PieceNeighbors.Locked<BlockData>> iter = dataSet.iterator();
         for (int i = 0; i < pieceNumber; i++) {
             iter.next();
         }
-        final PieceNeighbors<BlockData> piece = iter.next();
+        final PieceNeighbors.Locked<BlockData> piece = iter.next();
         final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
         final LocalSession playerSession = bukkitPlayer.getSession();
         final Location playerLocation = player.getLocation();
@@ -234,7 +234,7 @@ public class Commands extends BaseCommand {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
             try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc dumppiece")) {
                 placePiece(piece.getCenterPiece(), editSession, playerX, playerY, playerZ);
-                for (Map.Entry<Face, Piece<BlockData>> faceEntry : piece.entrySet()) {
+                for (Map.Entry<Face, Piece.Locked<BlockData>> faceEntry : piece.entrySet()) {
                     final Face face = faceEntry.getKey();
                     placePiece(faceEntry.getValue(), editSession,
                             playerX + face.getModX() * pieceSize, playerY + face.getModY() * pieceSize, playerZ + face.getModZ() * pieceSize);
@@ -246,7 +246,7 @@ public class Commands extends BaseCommand {
     }
 
     @Contract(pure = true)
-    private static void placePiece(final @NotNull Piece<BlockData> piece, final @NotNull EditSession editSession,
+    private static void placePiece(final @NotNull Piece.Locked<BlockData> piece, final @NotNull EditSession editSession,
                                    final int x, final int y, final int z) {
         for (int x1 = x; x1 < x + piece.xSize; x1++) {
             for (int y1 = y; y1 < y + piece.ySize; y1++) {

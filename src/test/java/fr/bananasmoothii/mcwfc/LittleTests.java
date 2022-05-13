@@ -58,7 +58,7 @@ class LittleTests {
         Piece<BImpl> piece2 = piece1.rotateZ(D270);
         assertEquals(STONE, piece2.get(2, 0, 0));
         assertEquals(piece1, piece2.rotateZ(D90));
-        assertEquals(piece2.rotateZ(D270), piece1.rotateZ(D180));
+        assertEquals(piece2.rotateZ(D270), piece1.rotateZ(D180).lock());
 
         Piece<BImpl> piece3 = new Piece<>(2, 3, 4, AIR);
         piece3.set(STONE, 0, 0, 0);
@@ -69,7 +69,8 @@ class LittleTests {
                         .rotateZ(D180)
                         .rotateX(D90)
                         .rotateY(D180)
-                        .rotateZ(D90));
+                        .rotateZ(D90)
+                        .lock());
     }
 
     @Test
@@ -78,25 +79,25 @@ class LittleTests {
         Piece<BImpl> piece = new Piece<>(2, 3, 4, AIR);
         piece.set(STONE, 0, 0, 0);
         assertEquals(piece,
-                piece.flipX().flipY().flipZ().flipX().flipY().flipZ());
+                piece.flipX().flipY().flipZ().flipX().flipY().flipZ().lock());
     }
 
     @Test
     @Order(4)
     void pieceSiblings() {
         Piece<BImpl> piece;
-        Set<@NotNull Piece<BImpl>> pieces;
+        Set<Piece.Locked<BImpl>> pieces;
         { // IDK why I did that way
             piece = new Piece<>(2, 3, 4, AIR);
             piece.set(STONE, 0, 0, 0);
             piece.set(STONE, 0, 1, 3);
             //piece.debugPrint();
-            pieces = piece.generateSiblings(true);
+            pieces = piece.lock().generateSiblingsLock(true);
             assertEquals(48, pieces.size());
         }
         {
             piece = new Piece<>(3, 3, 3, AIR);
-            pieces = piece.generateSiblings(true);
+            pieces = piece.lock().generateSiblingsLock(true);
             assertEquals(1, pieces.size());
         }
     }
@@ -133,9 +134,10 @@ class LittleTests {
         Piece<BImpl> center = new Piece<>(2, 3, 4, AIR);
         center.set(STONE, 0, 0, 0);
         center.set(STONE, 0, 1, 3);
-        neighbors = new PieceNeighbors<>(center);
-        neighbors.put(Face.TOP, center);
-        neighbors.put(Face.SOUTH_EAST_TOP, center);
+        final Piece.Locked<BImpl> centerLocked = center.lock();
+        neighbors = new PieceNeighbors<>(centerLocked);
+        neighbors.put(Face.TOP, centerLocked);
+        neighbors.put(Face.SOUTH_EAST_TOP, centerLocked);
         assertEquals(48, neighbors.generateSiblings(true).size());
         assertEquals(8, neighbors.generateSiblings(false).size());
     }
@@ -177,11 +179,13 @@ class LittleTests {
         System.out.println("Generated a piece set with " + pieceSet.size() + " elements");
     }
 
-    public static Piece<BImpl> faultyPiece = new Piece<>(2, AIR);
+    public static Piece.Locked<BImpl> faultyPiece;
     static {
-        faultyPiece.set(STONE, 0, 0, 0);
-        faultyPiece.set(STONE, 0, 1, 0);
-        faultyPiece.set(STONE, 1, 1, 0);
+        Piece<BImpl> piece = new Piece<>(2, AIR);
+        piece.set(STONE, 0, 0, 0);
+        piece.set(STONE, 0, 1, 0);
+        piece.set(STONE, 1, 1, 0);
+        faultyPiece = piece.lock();
     }
 
     @Test
@@ -189,8 +193,8 @@ class LittleTests {
     void checkPieces() {
         if (pieceSet == null) generatePieces();
         int i = 0;
-        for (PieceNeighbors<BImpl> pieceNeighbors : pieceSet) {
-            for (Map.Entry<Face, Piece<BImpl>> entry : pieceNeighbors.entrySet()) {
+        for (PieceNeighbors.Locked<BImpl> pieceNeighbors : pieceSet) {
+            for (Map.Entry<Face, Piece.Locked<BImpl>> entry : pieceNeighbors.entrySet()) {
                 assertTrue(pieceSet.centerPiecesContains(entry.getValue()),
                         "The generated piece set is not valid because the center pieces do not contain "
                                 + entry.getValue() + ", that is at " + entry.getKey() + " of the " + i + "th piece");
@@ -269,12 +273,12 @@ class LittleTests {
 
     @Contract(pure = true)
     private static void debugPrintSampleOnePieceIgnoreYLayers(@NotNull Sample<BImpl> sample) {
-        for (PieceNeighbors<BImpl> pieceNeighbors : sample) {
+        for (PieceNeighbors.Locked<BImpl> pieceNeighbors : sample) {
             debugPrintPieceNeighborOnePieceIgnoreYLayers(pieceNeighbors);
         }
     }
 
-    private static void debugPrintPieceNeighborOnePieceIgnoreYLayers(@NotNull PieceNeighbors<BImpl> pieceNeighbors) {
+    private static void debugPrintPieceNeighborOnePieceIgnoreYLayers(@NotNull PieceNeighbors.Locked<BImpl> pieceNeighbors) {
         System.out.println();
         System.out.println("  " + pieceNeighbors.get(Face.NORTH).get(0, 0, 0));
         System.out.println(pieceNeighbors.get(Face.WEST).get(0, 0, 0) + " "

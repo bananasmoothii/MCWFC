@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Wave<B> {
     /**
      * This needs to be a virtual space of {@link Sample<B>} and not just {@link Set}<{@link Piece}>
-     * because two {@link PieceNeighbors<B>} are different while their centerpiece might be the same.
+     * because two {@link PieceNeighbors.Locked<B>} are different while their centerpiece might be the same.
      * At the begenning, every node is equal to {@link #sample}, but they are not the same object: each {@link Sample<B>}
      * in the {@link VirtualSpace} is unique.
      */
@@ -111,7 +111,7 @@ public class Wave<B> {
      */
     public void fillWithPossibleStates() {
         boolean isAlreadyCollapsed = sample.size() <= 1;
-        final PieceNeighbors<B> aPiece = sample.iterator().next();
+        final PieceNeighbors.Locked<B> aPiece = sample.iterator().next();
         for (ObjectWithCoordinates<Sample<B>> node : wave) {
             wave.set(new Sample<>(sample), node.x(), node.y(), node.z(), useModuloCoords);
             if (isAlreadyCollapsed) {
@@ -128,15 +128,15 @@ public class Wave<B> {
         final Sample<B> newCandidates = new Sample<>();
         final Sample<B> currentCandidates = wave.get(x, y, z, useModuloCoords);
         if (currentCandidates == null) return newCandidates;
-        final Iterator<Map.Entry<PieceNeighbors<B>, Integer>> iter = currentCandidates.elementsAndWeightsIterator();
+        final Iterator<Map.Entry<PieceNeighbors.Locked<B>, Integer>> iter = currentCandidates.elementsAndWeightsIterator();
         while (iter.hasNext()) {
-            final Map.Entry<PieceNeighbors<B>, Integer> entry = iter.next();
-            final PieceNeighbors<B> currentCandidate = entry.getKey();
+            final Map.Entry<PieceNeighbors.Locked<B>, Integer> entry = iter.next();
+            final PieceNeighbors.Locked<B> currentCandidate = entry.getKey();
             final int currentCandidateWeight = entry.getValue();
             boolean isValidCandidate = true;
-            for (Map.Entry<Face, Piece<B>> faceEntry : currentCandidate.entrySet()) {
+            for (Map.Entry<Face, Piece.Locked<B>> faceEntry : currentCandidate.entrySet()) {
                 final Face face = faceEntry.getKey();
-                final Piece<B> expectedPiece = faceEntry.getValue();
+                final Piece.Locked<B> expectedPiece = faceEntry.getValue();
                 final @Nullable Sample<B> foundSample = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
                 if (foundSample == null) continue;
                 if (!(foundSample.centerPiecesContains(expectedPiece) && foundSample.acceptsAt(face.getOppositeFace(), currentCandidate.getCenterPiece()))) {
@@ -154,7 +154,7 @@ public class Wave<B> {
     /**
      * @return the collapsed {@link PieceNeighbors}
      */
-    private @NotNull PieceNeighbors<B> collapse(int x, int y, int z) throws GenerationFailedException {
+    private @NotNull PieceNeighbors.Locked<B> collapse(int x, int y, int z) throws GenerationFailedException {
         final Sample<B> collapseCandidates = getCollapseCandidatesAt(x, y, z);
 
         return collapseWithTheseCandidates(x, y, z, collapseCandidates);
@@ -163,8 +163,8 @@ public class Wave<B> {
     /**
      * @return the collapsed {@link PieceNeighbors}
      */
-    private @NotNull PieceNeighbors<B> collapseWithTheseCandidates(int x, int y, int z, @NotNull Sample<B> collapseCandidates) throws GenerationFailedException {
-        final PieceNeighbors<B> collapsed;
+    private @NotNull PieceNeighbors.Locked<B> collapseWithTheseCandidates(int x, int y, int z, @NotNull Sample<B> collapseCandidates) throws GenerationFailedException {
+        final PieceNeighbors.Locked<B> collapsed;
         if (collapseCandidates.isEmpty()) {
             hasImpossibleStates = true;
             throw new GenerationFailedException("Encountered an impossible state");
@@ -182,9 +182,9 @@ public class Wave<B> {
     /**
      * Should be called everytime an entropy is changed to 1.
      */
-    private void pieceCollapsed(int x, int y, int z, @NotNull PieceNeighbors<B> collapsed) throws GenerationFailedException {
+    private void pieceCollapsed(int x, int y, int z, @NotNull PieceNeighbors.Locked<B> collapsed) throws GenerationFailedException {
         // collapsing a piece also forces the neighbors to have the right centerpiece
-        for (Map.Entry<Face, Piece<B>> faceEntry : collapsed.entrySet()) {
+        for (Map.Entry<Face, Piece.Locked<B>> faceEntry : collapsed.entrySet()) {
             final Face face = faceEntry.getKey();
             final Sample<B> sampleAtThatFace = wave.get(x + face.getModX(), y + face.getModY(), z + face.getModZ(), useModuloCoords);
             if (sampleAtThatFace == null) continue;
@@ -292,26 +292,26 @@ public class Wave<B> {
         pieceCollapseListeners.add(Objects.requireNonNull(listener));
     }
 
-    private void pieceCollapsedCallListeners(int pieceX, int pieceY, int pieceZ, PieceNeighbors<B> piece) {
+    private void pieceCollapsedCallListeners(int pieceX, int pieceY, int pieceZ, PieceNeighbors.Locked<B> piece) {
         for (PieceCollapseListener<B> listener : pieceCollapseListeners) {
             listener.onCollapse(pieceX, pieceY, pieceZ, piece);
         }
     }
 
     /**
-     * A {@link FunctionalInterface} whose method is {@link #onCollapse(int, int, int, PieceNeighbors)}. It is called when a piece
+     * A {@link FunctionalInterface} whose method is {@link #onCollapse(int, int, int, PieceNeighbors.Locked)}. It is called when a piece
      * of this {@link Wave} totally collapses, meaning there is only one state left. that piece is passed along with its
      * coordinates in the parameters.
      */
     @FunctionalInterface
     public interface PieceCollapseListener<B> {
-        void onCollapse(int pieceX, int pieceY, int pieceZ, PieceNeighbors<B> piece);
+        void onCollapse(int pieceX, int pieceY, int pieceZ, PieceNeighbors.Locked<B> piece);
     }
 
     public static class GenerationFailedException extends Exception {
         // TODO: make GenerationFailedException specify some improvements that could be made on the dataset (adding
         //       one or more (probably just one since the generation stops at the first impossible state)
-        //       PieceNeighbors<B>) to make it easier to collapse the wave.
+        //       PieceNeighbors.Locked<B>) to make it easier to collapse the wave.
         public GenerationFailedException(String message) {
             super(message);
         }

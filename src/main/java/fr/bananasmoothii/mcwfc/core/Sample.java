@@ -11,11 +11,11 @@ import java.util.Map;
 /**
  * @param <B> the type of the blocks in the {@link Piece}s. For example, in bukkit, this is {@link org.bukkit.block.data.BlockData}
  */
-public class Sample<B> extends WeightedSet<PieceNeighbors<B>> {
+public class Sample<B> extends WeightedSet<PieceNeighbors.Locked<B>> {
     public Sample() {
     }
 
-    public Sample(WeightedSet<PieceNeighbors<B>> other) {
+    public Sample(WeightedSet<PieceNeighbors.Locked<B>> other) {
         super(other);
     }
 
@@ -23,9 +23,9 @@ public class Sample<B> extends WeightedSet<PieceNeighbors<B>> {
      * Filters this {@link Sample} and returns only the {@link PieceNeighbors} having this
      * {@link Piece} as {@link PieceNeighbors#getCenterPiece() center piece}.
      */
-    public @NotNull Sample<B> getNeighborsFor(@NotNull Piece<B> piece) {
+    public @NotNull Sample<B> getNeighborsFor(@NotNull Piece.Locked<B> piece) {
         Sample<B> result = new Sample<>();
-        for (PieceNeighbors<B> neighbors : this) {
+        for (PieceNeighbors.Locked<B> neighbors : this) {
             if (neighbors.getCenterPiece().equals(piece)) {
                 result.add(neighbors);
             }
@@ -37,18 +37,18 @@ public class Sample<B> extends WeightedSet<PieceNeighbors<B>> {
      * @return all centerpieces of all {@link PieceNeighbors}
      */
     @Contract(pure = true)
-    public @NotNull WeightedSet<Piece<B>> getCenterPieces() {
-        WeightedSet<Piece<B>> result = new WeightedSet<>();
-        final Iterator<Map.Entry<PieceNeighbors<B>, Integer>> iter = elementsAndWeightsIterator();
+    public @NotNull WeightedSet<Piece.Locked<B>> getCenterPieces() {
+        WeightedSet<Piece.Locked<B>> result = new WeightedSet<>();
+        final Iterator<Map.Entry<PieceNeighbors.Locked<B>, Integer>> iter = elementsAndWeightsIterator();
         while (iter.hasNext()) {
-            final Map.Entry<PieceNeighbors<B>, Integer> entry = iter.next();
+            final Map.Entry<PieceNeighbors.Locked<B>, Integer> entry = iter.next();
             result.add(entry.getKey().getCenterPiece(), entry.getValue());
         }
         return result;
     }
 
     @Contract(pure = true)
-    public boolean centerPiecesContains(Piece<B> piece) {
+    public boolean centerPiecesContains(Piece.Locked<B> piece) {
         for (PieceNeighbors<B> pieceNeighbors : this) {
             final Piece<B> centerPiece = pieceNeighbors.getCenterPiece();
             if (centerPiece.equals(piece)) {
@@ -58,9 +58,9 @@ public class Sample<B> extends WeightedSet<PieceNeighbors<B>> {
         return false;
     }
 
-    public boolean retainAllWithCenterPiece(@NotNull Piece<B> centerPiece) {
+    public boolean retainAllWithCenterPiece(@NotNull Piece.Locked<B> centerPiece) {
         boolean changed = false;
-        Iterator<PieceNeighbors<B>> iterator = iterator();
+        Iterator<PieceNeighbors.Locked<B>> iterator = iterator();
         while (iterator.hasNext()) {
             PieceNeighbors<B> neighbors = iterator.next();
             if (!neighbors.getCenterPiece().equals(centerPiece)) {
@@ -74,8 +74,8 @@ public class Sample<B> extends WeightedSet<PieceNeighbors<B>> {
     /**
      * @return true if there is at least one {@link PieceNeighbors} having this {@link Piece} at that {@link Face}
      */
-    public boolean acceptsAt(@NotNull Face face, @NotNull Piece<B> piece) {
-        for (PieceNeighbors<B> neighbors : this) {
+    public boolean acceptsAt(@NotNull Face face, @NotNull Piece.Locked<B> piece) {
+        for (PieceNeighbors.Locked<B> neighbors : this) {
             if (neighbors.get(face).equals(piece)) {
                 return true;
             }

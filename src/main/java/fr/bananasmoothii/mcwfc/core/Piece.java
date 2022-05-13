@@ -6,10 +6,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
@@ -69,21 +66,12 @@ public class Piece<B> {
         }
     }
 
-    public Piece<B> copy() {
-        Piece<B> copy = new Piece<>(xSize, ySize, zSize);
-        for (int x = 0; x < xSize; x++) {
-            for (int y = 0; y < ySize; y++) {
-                System.arraycopy(data[x][y], 0, copy.data[x][y], 0, zSize);
-            }
-        }
-        return copy;
-    }
-
     /**
      * @return A set containing all possible rotated and flipped versions of this (it also contains this)
      */
-    public @NotNull Set<@NotNull Piece<B>> generateSiblings(boolean allowUpsideDown) {
-        Set<@NotNull Piece<B>> pieces = new HashSet<>();
+    @Contract(pure = true)
+    public @NotNull Set<Piece<B>> generateSiblings(boolean allowUpsideDown) {
+        Set<Piece<B>> pieces = new HashSet<>();
         pieces.add(this);
         if (allowUpsideDown) {
             pieces.addAll(generateSiblings(false));
@@ -293,6 +281,133 @@ public class Piece<B> {
     public int hashCode() {
         if (hashCodeCache == null) hashCodeCache = Arrays.deepHashCode(data);
         return hashCodeCache;
+    }
+
+    public Locked<B> lock() {
+        return Locked.of(this);
+    }
+
+    /**
+     * An immutable version of {@link Piece}
+     * @param <B> the type of blocks in this piece. In minecraft, this can be {@link BlockData}.
+     */
+    public static final class Locked<B> extends Piece<B> {
+
+        private static final ArrayList<Locked<?>> instances = new ArrayList<>();
+
+        private final int hashCode;
+
+        private Locked(@NotNull Piece<B> piece) {
+            super(piece.xSize, piece.ySize, piece.zSize);
+            for (int x = 0; x < xSize; x++) {
+                for (int y = 0; y < ySize; y++) {
+                    System.arraycopy(piece.data[x][y], 0, super.data[x][y], 0, zSize);
+                }
+            }
+            hashCode = Arrays.deepHashCode(super.data);
+        }
+
+        @SuppressWarnings("unchecked")
+        public static <B> @NotNull Locked<B> of(@NotNull Piece<B> piece) {
+            for (Locked<?> locked : instances) {
+                if (piece.equals(locked)) return (Locked<B>) locked;
+            }
+            Locked<B> newInstance = new Locked<>(piece);
+            instances.add(newInstance);
+            return newInstance;
+        }
+
+        @Override
+        public void set(@NotNull B block, int x, int y, int z) {
+            throw new UnsupportedOperationException("This piece is locked");
+        }
+
+        @Override
+        public void fill(@NotNull B block) {
+            throw new UnsupportedOperationException("This piece is locked");
+        }
+
+        /**
+         * In a {@link Locked locked Piece}, if two objects are equal, they are the same object. This is the hole
+         * point of this class.
+         */
+        @Override
+        public boolean equals(Object o) {
+            return this == o;
+        }
+
+        @Override
+        public int hashCode() {
+            return hashCode;
+        }
+
+        @Override
+        public Locked<B> lock() {
+            return this;
+        }
+        
+        public @NotNull Set<Piece.Locked<B>> generateSiblingsLock(boolean allowUpsideDown) {
+            Set<Locked<B>> pieces = new HashSet<>();
+            pieces.add(this);
+            if (allowUpsideDown) {
+                pieces.addAll(generateSiblingsLock(false));
+                pieces.addAll(rotateZ(D90).generateSiblingsLock(false));
+                pieces.addAll(rotateZ(D180).generateSiblingsLock(false));
+                pieces.addAll(rotateZ(D270).generateSiblingsLock(false));
+                pieces.addAll(rotateX(D90).generateSiblingsLock(false));
+                pieces.addAll(rotateX(D270).generateSiblingsLock(false));
+                pieces.addAll(flipY().generateSiblingsLock(false));
+            } else {
+                final Locked<B> r90 = rotateY(D90);
+                if (pieces.add(r90)) {
+                    pieces.add(r90.flipX());
+                    pieces.add(r90.flipZ());
+                }
+                final Locked<B> r180 = rotateY(D180);
+                if (pieces.add(r180)) {
+                    pieces.add(r180.flipX());
+                    pieces.add(r180.flipZ());
+                }
+                final Locked<B> r270 = rotateY(D270);
+                if (pieces.add(r270)) {
+                    pieces.add(r270.flipX());
+                    pieces.add(r270.flipZ());
+                }
+                pieces.add(flipX());
+                pieces.add(flipZ());
+            }
+            return pieces;
+        }
+
+        @Override
+        public @NotNull Locked<B> rotateX(@NotNull RotationAngle angle) {
+            return super.rotateX(angle).lock();
+        }
+
+        @Override
+        public @NotNull Locked<B> rotateY(@NotNull RotationAngle angle) {
+            return super.rotateY(angle).lock();
+        }
+
+        @Override
+        public @NotNull Locked<B> rotateZ(@NotNull RotationAngle angle) {
+            return super.rotateZ(angle).lock();
+        }
+
+        @Override
+        public @NotNull Locked<B> flipX() {
+            return super.flipX().lock();
+        }
+
+        @Override
+        public @NotNull Locked<B> flipY() {
+            return super.flipY().lock();
+        }
+
+        @Override
+        public @NotNull Locked<B> flipZ() {
+            return super.flipZ().lock();
+        }
     }
 
     @Contract(pure = true)
