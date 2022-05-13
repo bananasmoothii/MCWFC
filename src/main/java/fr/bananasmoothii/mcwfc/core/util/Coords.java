@@ -15,6 +15,11 @@ public record Coords(int x, int y, int z) {
         return Math.sqrt(square(x - other.x) + square(y - other.y) + square(z - other.z));
     }
 
+    @Contract(pure = true)
+    public double distanceFrom(int x, int y, int z) {
+        return Math.sqrt(square(this.x - x) + square(this.y - y) + square(this.z - z));
+    }
+
     public static int square(int x) {
         return x * x;
     }

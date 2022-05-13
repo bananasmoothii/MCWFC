@@ -6,6 +6,7 @@ import fr.bananasmoothii.mcwfc.core.util.Face;
 import fr.bananasmoothii.mcwfc.core.util.WeightedSet;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static fr.bananasmoothii.mcwfc.BImpl.*;
@@ -136,8 +138,8 @@ class LittleTests {
         center.set(STONE, 0, 1, 3);
         final Piece.Locked<BImpl> centerLocked = center.lock();
         neighbors = new PieceNeighbors<>(centerLocked);
-        neighbors.put(Face.TOP, centerLocked);
-        neighbors.put(Face.SOUTH_EAST_TOP, centerLocked);
+        neighbors.put(Face.TOP, Optional.of(centerLocked));
+        neighbors.put(Face.SOUTH_EAST_TOP, Optional.of(centerLocked));
         assertEquals(48, neighbors.generateSiblings(true).size());
         assertEquals(8, neighbors.generateSiblings(false).size());
     }
@@ -194,8 +196,8 @@ class LittleTests {
         if (pieceSet == null) generatePieces();
         int i = 0;
         for (PieceNeighbors.Locked<BImpl> pieceNeighbors : pieceSet) {
-            for (Map.Entry<Face, Piece.Locked<BImpl>> entry : pieceNeighbors.entrySet()) {
-                assertTrue(pieceSet.centerPiecesContains(entry.getValue()),
+            for (Map.Entry<Face, Optional<Piece.Locked<BImpl>>> entry : pieceNeighbors.entrySet()) {
+                assertTrue(pieceSet.centerPiecesContains(entry.getValue().orElseThrow()),
                         "The generated piece set is not valid because the center pieces do not contain "
                                 + entry.getValue() + ", that is at " + entry.getKey() + " of the " + i + "th piece");
             }
@@ -214,17 +216,6 @@ class LittleTests {
     }
 
     private static Sample<BImpl> pieceSet;
-
-    @Test
-    @Order(11)
-    void getCollapseCandidates() throws Wave.GenerationFailedException {
-        if (pieceSet == null) generatePieces();
-        final Bounds bounds = new Bounds(0, 0, 0, 10, 10, 10);
-        Wave<BImpl> wave = new Wave<>(pieceSet, bounds);
-        wave.fillWithPossibleStates(wave.getWave().getBounds());
-        assertEquals(pieceSet.size(), wave.getCollapseCandidatesAt(5, 5, 5).size(),
-                "At the beginning, every piece should be a collapse candidate");
-    }
 
     @Test
     @Order(12)
@@ -253,22 +244,23 @@ class LittleTests {
         assertEquals(16, new HashSet<>(sample).stream().filter(p -> p.getCenterPiece().get(0, 0, 0) == AIR).count());
         assertEquals(34, sample.size(), "The sample should have 34 elements");
 
-
-        for (int i = 0; i < 4; i++) {
+        @Nullable Wave.GenerationFailedException lastException = null;
+        for (int i = 0; i < 10; i++) {
             try {
                 final Wave<BImpl> wave = new Wave<>(sample, bounds);
                 System.out.println("Collapsing the wave with modulo coords, try " + i);
                 wave.collapseAll();
-                System.out.println("Yay, the wave has collapsed!");
+                System.out.println("Yay, the wave has collapsed ! Here it is:");
+                wave.debugPrintY(0);
                 //assertFalse(wave.hasImpossibleStates(), "The wave has impossible states");
                 if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states");
                 return;
             } catch (Wave.GenerationFailedException e) {
-                System.out.println("The wave has failed to collapse, retrying...");
-                e.printStackTrace();
+                lastException = e;
             }
         }
-        fail("The wave has failed to collapse after 4 attempts");
+        lastException.printStackTrace();
+        fail("The wave has failed to collapse after 10 attempts");
     }
 
     @Contract(pure = true)
@@ -280,11 +272,11 @@ class LittleTests {
 
     private static void debugPrintPieceNeighborOnePieceIgnoreYLayers(@NotNull PieceNeighbors.Locked<BImpl> pieceNeighbors) {
         System.out.println();
-        System.out.println("  " + pieceNeighbors.get(Face.NORTH).get(0, 0, 0));
-        System.out.println(pieceNeighbors.get(Face.WEST).get(0, 0, 0) + " "
+        System.out.println("  " + pieceNeighbors.get(Face.NORTH).orElseThrow().get(0, 0, 0));
+        System.out.println(pieceNeighbors.get(Face.WEST).orElseThrow().get(0, 0, 0) + " "
                 + pieceNeighbors.getCenterPiece().get(0, 0, 0) + " "
-                + pieceNeighbors.get(Face.EAST).get(0, 0, 0));
-        System.out.println("  " + pieceNeighbors.get(Face.SOUTH).get(0, 0, 0));
+                + pieceNeighbors.get(Face.EAST).orElseThrow().get(0, 0, 0));
+        System.out.println("  " + pieceNeighbors.get(Face.SOUTH).orElseThrow().get(0, 0, 0));
     }
 
     @Test
@@ -308,20 +300,23 @@ class LittleTests {
         sampleSource.set(LEAVES, 3, 0, 2);
         sampleSource.set(STONE, 3, 0, 1);
         sampleSource.set(LEAVES, 4, 0, 1);
+
+        @Nullable Wave.GenerationFailedException lastException = null;
         for (int i = 0; i < 8; i++) {
             try {
                 Wave<BImpl> wave = new Wave<>(sampleSource.generatePieces(1), bounds, false);
                 System.out.println("Collapsing the wave without modulo coords, try " + i);
                 wave.collapseAll();
-                System.out.println("Yay, the wave has collapsed!");
+                System.out.println("Yay, the wave has collapsed ! Here it is:");
+                wave.debugPrintY(0);
                 //assertFalse(wave.hasImpossibleStates(), "The wave has impossible states");
                 if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states");
                 return;
             } catch (Wave.GenerationFailedException e) {
-                System.out.println("The wave has failed to collapse, retrying...");
-                e.printStackTrace();
+                lastException = e;
             }
         }
+        lastException.printStackTrace();
         fail("The wave has failed to collapse after 8 attempts");
     }
 

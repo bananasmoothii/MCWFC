@@ -13,14 +13,14 @@ import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 /**
  * @param <B> the type of blocks in this piece. In minecraft, this can be {@link BlockData}.
  */
-public class PieceNeighbors<B> extends HashMap<Face, Piece.Locked<B>> {
+public class PieceNeighbors<B> extends HashMap<Face, Optional<Piece.Locked<B>>> {
     private final @NotNull Piece.Locked<B> centerPiece;
 
     public PieceNeighbors(@NotNull Piece.Locked<B> centerPiece) {
         this.centerPiece = Objects.requireNonNull(centerPiece);
     }
 
-    public PieceNeighbors(Map<? extends Face, ? extends Piece.Locked<B>> m, @NotNull Piece.Locked<B> centerPiece) {
+    public PieceNeighbors(Map<? extends Face, ? extends Optional<Piece.Locked<B>>> m, @NotNull Piece.Locked<B> centerPiece) {
         super(m);
         this.centerPiece = Objects.requireNonNull(centerPiece);
     }
@@ -88,48 +88,48 @@ public class PieceNeighbors<B> extends HashMap<Face, Piece.Locked<B>> {
     @Contract(pure = true)
     public @NotNull PieceNeighbors<B> rotateX(final @NotNull RotationAngle angle) {
         PieceNeighbors<B> copy = new PieceNeighbors<>(centerPiece.rotateX(angle));
-        for (Map.Entry<Face, Piece.Locked<B>> entry : entrySet()) {
-            copy.put(entry.getKey().rotateX(angle), entry.getValue().rotateX(angle));
+        for (Map.Entry<Face, Optional<Piece.Locked<B>>> entry : entrySet()) {
+            copy.put(entry.getKey().rotateX(angle), entry.getValue().map(piece -> piece.rotateX(angle)));
         }
         return copy;
     }
 
     public @NotNull PieceNeighbors<B> rotateY(final @NotNull RotationAngle angle) {
         PieceNeighbors<B> copy = new PieceNeighbors<>(centerPiece.rotateY(angle));
-        for (Map.Entry<Face, Piece.Locked<B>> entry : entrySet()) {
-            copy.put(entry.getKey().rotateY(angle), entry.getValue().rotateY(angle));
+        for (Map.Entry<Face, Optional<Piece.Locked<B>>> entry : entrySet()) {
+            copy.put(entry.getKey().rotateY(angle), entry.getValue().map(piece -> piece.rotateY(angle)));
         }
         return copy;
     }
 
     public @NotNull PieceNeighbors<B> rotateZ(final @NotNull RotationAngle angle) {
         PieceNeighbors<B> copy = new PieceNeighbors<>(centerPiece.rotateZ(angle));
-        for (Map.Entry<Face, Piece.Locked<B>> entry : entrySet()) {
-            copy.put(entry.getKey().rotateZ(angle), entry.getValue().rotateZ(angle));
+        for (Map.Entry<Face, Optional<Piece.Locked<B>>> entry : entrySet()) {
+            copy.put(entry.getKey().rotateZ(angle), entry.getValue().map(piece -> piece.rotateZ(angle)));
         }
         return copy;
     }
 
     public @NotNull PieceNeighbors<B> flipX() {
         PieceNeighbors<B> copy = new PieceNeighbors<>(centerPiece.flipX());
-        for (Map.Entry<Face, Piece.Locked<B>> entry : entrySet()) {
-            copy.put(entry.getKey().flipX(), entry.getValue().flipX());
+        for (Map.Entry<Face, Optional<Piece.Locked<B>>> entry : entrySet()) {
+            copy.put(entry.getKey().flipX(), entry.getValue().map(Piece.Locked::flipX));
         }
         return copy;
     }
 
     public @NotNull PieceNeighbors<B> flipY() {
         PieceNeighbors<B> copy = new PieceNeighbors<>(centerPiece.flipY());
-        for (Map.Entry<Face, Piece.Locked<B>> entry : entrySet()) {
-            copy.put(entry.getKey().flipY(), entry.getValue().flipY());
+        for (Map.Entry<Face, Optional<Piece.Locked<B>>> entry : entrySet()) {
+            copy.put(entry.getKey().flipY(), entry.getValue().map(Piece.Locked::flipY));
         }
         return copy;
     }
 
     public @NotNull PieceNeighbors<B> flipZ() {
         PieceNeighbors<B> copy = new PieceNeighbors<>(centerPiece.flipZ());
-        for (Map.Entry<Face, Piece.Locked<B>> entry : entrySet()) {
-            copy.put(entry.getKey().flipZ(), entry.getValue().flipZ());
+        for (Map.Entry<Face, Optional<Piece.Locked<B>>> entry : entrySet()) {
+            copy.put(entry.getKey().flipZ(), entry.getValue().map(Piece.Locked::flipZ));
         }
         return copy;
     }

@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A {@link VirtualSpace} with minecraft blocks ({@link B}). It provides some useful methods, mainly to generate
@@ -68,12 +69,11 @@ public class MCVirtualSpace<B> extends VirtualSpace<@NotNull B> {
     public Sample<B> generatePieces(final int pieceSize, final boolean allowUpsideDown,
                                  final boolean useModuloCoordsTopAndBottom) {
         Sample<B> result = new Sample<>();
-        HashMap<Coords, Piece.Locked<B>> piecesCache = new HashMap<>(); // used to keep the same reference for pieces with the exact same coords
+        HashMap<Coords, Optional<Piece.Locked<B>>> piecesCache = new HashMap<>(); // used to keep the same reference for pieces with the exact same coords
         for (int x = xMin(); x <= xMax(); x++) {
             for (int y = yMin(); y <= yMax(); y++) {
                 for (int z = zMin(); z <= zMax(); z++) {
-                    @SuppressWarnings("ConstantConditions") // useModuloCoords is true
-                    PieceNeighbors<B> pieceNeighbors = new PieceNeighbors<>(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache));
+                    PieceNeighbors<B> pieceNeighbors = new PieceNeighbors<>(getPieceAt(new Coords(x, y, z), pieceSize, true, piecesCache).orElseThrow());
                     pieceNeighbors.put(Face.TOP, getPieceAt(new Coords(x, y + pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
                     pieceNeighbors.put(Face.BOTTOM, getPieceAt(new Coords(x, y - pieceSize, z), pieceSize, useModuloCoordsTopAndBottom, piecesCache));
                     pieceNeighbors.put(Face.WEST, getPieceAt(new Coords(x - pieceSize, y, z), pieceSize, true, piecesCache));
@@ -136,10 +136,10 @@ public class MCVirtualSpace<B> extends VirtualSpace<@NotNull B> {
      * Useful to keep same references for same pieces.
      * @see #getPieceAt(int, int, int, int, boolean)
      */
-    protected @Nullable Piece.Locked<B> getPieceAt(final @NotNull Coords coords, final int pieceSize, final boolean useModuloCoords,
-                                        @NotNull Map<Coords, Piece.Locked<B>> pieceCache) {
+    protected Optional<Piece.Locked<B>> getPieceAt(final @NotNull Coords coords, final int pieceSize, final boolean useModuloCoords,
+                                                             @NotNull Map<Coords, Optional<Piece.Locked<B>>> pieceCache) {
         return pieceCache.computeIfAbsent(coords,
-                coords1 -> getPieceAt(coords1.x(), coords1.y(), coords1.z(), pieceSize, useModuloCoords));
+                coords1 -> Optional.ofNullable(getPieceAt(coords1.x(), coords1.y(), coords1.z(), pieceSize, useModuloCoords)));
     }
 
     @Override

@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @param <B> the type of the blocks in the {@link Piece}s. For example, in bukkit, this is {@link org.bukkit.block.data.BlockData}
@@ -49,8 +50,8 @@ public class Sample<B> extends WeightedSet<PieceNeighbors.Locked<B>> {
 
     @Contract(pure = true)
     public boolean centerPiecesContains(Piece.Locked<B> piece) {
-        for (PieceNeighbors<B> pieceNeighbors : this) {
-            final Piece<B> centerPiece = pieceNeighbors.getCenterPiece();
+        for (PieceNeighbors.Locked<B> pieceNeighbors : this) {
+            final Piece.Locked<B> centerPiece = pieceNeighbors.getCenterPiece();
             if (centerPiece.equals(piece)) {
                 return true;
             }
@@ -62,7 +63,7 @@ public class Sample<B> extends WeightedSet<PieceNeighbors.Locked<B>> {
         boolean changed = false;
         Iterator<PieceNeighbors.Locked<B>> iterator = iterator();
         while (iterator.hasNext()) {
-            PieceNeighbors<B> neighbors = iterator.next();
+            PieceNeighbors.Locked<B> neighbors = iterator.next();
             if (!neighbors.getCenterPiece().equals(centerPiece)) {
                 iterator.remove();
                 changed = true;
@@ -76,9 +77,8 @@ public class Sample<B> extends WeightedSet<PieceNeighbors.Locked<B>> {
      */
     public boolean acceptsAt(@NotNull Face face, @NotNull Piece.Locked<B> piece) {
         for (PieceNeighbors.Locked<B> neighbors : this) {
-            if (neighbors.get(face).equals(piece)) {
-                return true;
-            }
+            final Optional<Piece.Locked<B>> neighbor = neighbors.get(face);
+            if (neighbor.isPresent() && neighbor.get().equals(piece)) return true;
         }
         return false;
     }

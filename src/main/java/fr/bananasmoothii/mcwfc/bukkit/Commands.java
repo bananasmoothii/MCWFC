@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -234,10 +235,14 @@ public class Commands extends BaseCommand {
         Bukkit.getScheduler().runTaskAsynchronously(MCWFCPlugin.inst(), () -> {
             try (final EditSession editSession = playerSession.createEditSession(bukkitPlayer, "mcwfc dumppiece")) {
                 placePiece(piece.getCenterPiece(), editSession, playerX, playerY, playerZ);
-                for (Map.Entry<Face, Piece.Locked<BlockData>> faceEntry : piece.entrySet()) {
+                for (Map.Entry<Face, Optional<Piece.Locked<BlockData>>> faceEntry : piece.entrySet()) {
                     final Face face = faceEntry.getKey();
-                    placePiece(faceEntry.getValue(), editSession,
-                            playerX + face.getModX() * pieceSize, playerY + face.getModY() * pieceSize, playerZ + face.getModZ() * pieceSize);
+                    final Optional<Piece.Locked<BlockData>> pieceToPlace = faceEntry.getValue();
+                    pieceToPlace.ifPresent(blockDataLocked -> placePiece(blockDataLocked,
+                            editSession,
+                            playerX + face.getModX() * pieceSize,
+                            playerY + face.getModY() * pieceSize,
+                            playerZ + face.getModZ() * pieceSize));
                 }
                 playerSession.remember(editSession);
             }
