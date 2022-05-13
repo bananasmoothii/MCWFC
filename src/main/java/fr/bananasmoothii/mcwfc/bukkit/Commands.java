@@ -18,6 +18,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -139,8 +140,10 @@ public class Commands extends BaseCommand {
                 return;
             }
 
+            int maxTotalEntropy = bounds.xSize() * bounds.ySize() * bounds.zSize() * pieces.size();
+
             final BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
-            Wave<BlockData> wave = new Wave<>(pieces, bounds, useModuloCoords, seed);
+            final Wave<BlockData> wave = new Wave<>(pieces, bounds, useModuloCoords, seed);
             final LocalSession playerSession = bukkitPlayer.getSession();
             if (INCREMENTAL_GENERATION)
                 wave.registerPieceCollapseListener((pieceX, pieceY, pieceZ, piece) ->
@@ -165,6 +168,9 @@ public class Commands extends BaseCommand {
                         }));
 
             sendMessage(player, "Generating... (this may take a while)");
+            final BukkitTask playerNotifyTask = Bukkit.getScheduler().runTaskTimerAsynchronously(MCWFCPlugin.inst(), () -> {
+                player.sendMessage("§eGenerating... (" + wave.getTotalEntropy() + "/" + maxTotalEntropy + ")");
+            }, 40, 40);
             try {
                 wave.collapseAll();
                 if (!INCREMENTAL_GENERATION) {
@@ -192,15 +198,24 @@ public class Commands extends BaseCommand {
                 }
                 sendMessage(player, "§aDone with generating !");
             } catch (Wave.GenerationFailedException e) {
+                StringBuilder message = new StringBuilder(e.getMessage());
+                Throwable e1 = e;
+                while (e1 != null) {
+                    message.append(" caused by ").append(e1.getMessage());
+                    e1 = e1.getCause();
+                }
                 sendMessage(player, "§cSorry, the generation failed. This can happen sometimes if your " +
                         "dataset is too complex. But this happens randomly, so just try again (if you set a seed, make sure " +
                         "to change it otherwise it will encounter the same problem). If you still get this error, please " +
                         "try with a less complex dataset, that means a dataset with a low variety (using less different " +
-                        "blocs). You can also use a dataset with modulo coords (the default parameter)");
+                        "blocs). You can also use a dataset with modulo coords (the default parameter). Here is the error : §o" +
+                        message);
             } catch (OutOfMemoryError e) {
                 sendMessage(player, "§cOops, your current selection is too big for this server, because " +
                         "it just ran out of memory. Please try again with a smaller selection. If you get this error " +
                         "even with a smaller generation area, this may be a bug.");
+            } finally {
+                playerNotifyTask.cancel();
             }
         });
     }

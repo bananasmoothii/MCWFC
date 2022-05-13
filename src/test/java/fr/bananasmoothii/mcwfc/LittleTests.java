@@ -245,7 +245,7 @@ class LittleTests {
         assertEquals(34, sample.size(), "The sample should have 34 elements");
 
         @Nullable Wave.GenerationFailedException lastException = null;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 8; i++) {
             try {
                 final Wave<BImpl> wave = new Wave<>(sample, bounds);
                 System.out.println("Collapsing the wave with modulo coords, try " + i);
@@ -253,14 +253,14 @@ class LittleTests {
                 System.out.println("Yay, the wave has collapsed ! Here it is:");
                 wave.debugPrintY(0);
                 //assertFalse(wave.hasImpossibleStates(), "The wave has impossible states");
-                if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states");
+                if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states (with modulo coords)");
                 return;
             } catch (Wave.GenerationFailedException e) {
                 lastException = e;
             }
         }
         lastException.printStackTrace();
-        fail("The wave has failed to collapse after 10 attempts");
+        fail("The wave has failed to collapse after 8 attempts");
     }
 
     @Contract(pure = true)
@@ -310,7 +310,7 @@ class LittleTests {
                 System.out.println("Yay, the wave has collapsed ! Here it is:");
                 wave.debugPrintY(0);
                 //assertFalse(wave.hasImpossibleStates(), "The wave has impossible states");
-                if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states");
+                if (wave.hasImpossibleStates()) System.err.println("The wave has impossible states (without modulo coords)");
                 return;
             } catch (Wave.GenerationFailedException e) {
                 lastException = e;

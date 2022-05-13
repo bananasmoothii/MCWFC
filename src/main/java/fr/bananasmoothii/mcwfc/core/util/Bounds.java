@@ -5,11 +5,24 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Random;
 
 public record Bounds(int xMin, int yMin, int zMin, int xMax, int yMax, int zMax) implements Iterable<Coords> {
     public Bounds {
         if (xMin > xMax || yMin > yMax || zMin > zMax)
             throw new IllegalArgumentException("lower bounds must be lower than upper bounds");
+    }
+
+    public int xSize() {
+        return xMax - xMin;
+    }
+
+    public int ySize() {
+        return yMax - yMin;
+    }
+
+    public int zSize() {
+        return zMax - zMin;
     }
 
     public boolean contains(@NotNull Coords coords) {
@@ -18,6 +31,15 @@ public record Bounds(int xMin, int yMin, int zMin, int xMax, int yMax, int zMax)
 
     public boolean contains(int x, int y, int z) {
         return xMin <= x && x <= xMax && yMin <= y && y <= yMax && zMin <= z && z <= zMax;
+    }
+
+    @Contract("_ -> new")
+    public @NotNull Coords randomPoint(@NotNull Random random) {
+        return new Coords(
+                random.nextInt(xMin, xMax + 1),
+                random.nextInt(yMin, yMax + 1),
+                random.nextInt(zMin, zMax + 1)
+        );
     }
 
     @Contract(value = "_, _, _, _, _, _ -> new", pure = true)
