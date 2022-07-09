@@ -1,7 +1,6 @@
 package fr.bananasmoothii.mcwfc.core;
 
 import fr.bananasmoothii.mcwfc.core.util.RotationAngle;
-import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,7 +10,7 @@ import java.util.*;
 import static fr.bananasmoothii.mcwfc.core.util.RotationAngle.*;
 
 /**
- * @param <B> the type of blocks in this piece. In minecraft, this can be {@link BlockData}.
+ * @param <B> the type of blocks in this piece. In vanilla minecraft, this can be {@code BlockData}.
  */
 public class Piece<B> {
     

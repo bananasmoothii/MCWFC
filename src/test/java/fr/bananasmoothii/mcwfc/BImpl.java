@@ -1,11 +1,8 @@
 package fr.bananasmoothii.mcwfc;
 
-import org.bukkit.Material;
-
 /**
  * Some easy blocks for {@link fr.bananasmoothii.mcwfc.core.Piece}
  */
-@SuppressWarnings({"ClassCanBeRecord"})
 public class BImpl {
 
     public static final BImpl AIR = new BImpl(Material.AIR);
@@ -22,5 +19,9 @@ public class BImpl {
     public String toString() {
         if (this == AIR) return "-";
         return String.valueOf(material.name().charAt(0));
+    }
+
+    public enum Material {
+        AIR, STONE, OAK_LEAVES
     }
 }

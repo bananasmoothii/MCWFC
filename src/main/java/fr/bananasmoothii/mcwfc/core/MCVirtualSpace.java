@@ -3,7 +3,6 @@ package fr.bananasmoothii.mcwfc.core;
 import fr.bananasmoothii.mcwfc.core.util.Bounds;
 import fr.bananasmoothii.mcwfc.core.util.Coords;
 import fr.bananasmoothii.mcwfc.core.util.Face;
-import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,9 +13,9 @@ import java.util.Optional;
 
 /**
  * A {@link VirtualSpace} with minecraft blocks ({@link B}). It provides some useful methods, mainly to generate
- * {@link Piece}s. This implementation does not allow {@code null} fills (see {@link VirtualSpace#setFill(Object)}.
+ * {@link Piece}s. This implementation does not allow {@code null} fills (see {@link VirtualSpace#setFill(Object)}).
  * @see #generatePieces(int, boolean, boolean)
- * @param <B> the type of block in the space. For example, in bukkit, this is {@link BlockData}.
+ * @param <B> the type of blocks in this piece. In vanilla minecraft, this can be {@code BlockData}.
  */
 @SuppressWarnings("NullableProblems")
 public class MCVirtualSpace<B> extends VirtualSpace<@NotNull B> {
