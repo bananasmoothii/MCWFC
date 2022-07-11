@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * @param <B> the type of the blocks in the {@link Piece}s. For example, in bukkit, this is {@link org.bukkit.block.data.BlockData}
+ * @param <B> the type of the blocks in the {@link Piece}s. For example, in bukkit, this is BlockData.
  */
 public class Wave<B> {
     /**

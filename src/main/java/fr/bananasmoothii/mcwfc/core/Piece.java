@@ -28,7 +28,7 @@ public class Piece<B> {
 
     protected Piece(int xSize, int ySize, int zSize) {
         if (xSize < 1 || ySize < 1 || zSize < 1)
-            throw new IllegalArgumentException("Piece<B> size can't be below 1");
+            throw new IllegalArgumentException("Piece size can't be below 1");
         //noinspection unchecked
         data = (B[][][]) new Object[xSize][ySize][zSize];
         this.xSize = xSize;

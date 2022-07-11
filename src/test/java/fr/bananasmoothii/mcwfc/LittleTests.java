@@ -282,7 +282,6 @@ class LittleTests {
     @Test
     @Order(13)
     void waveFunctionCollapseWithoutModuloCoords() {
-        if (pieceSet == null) generatePieces();
         final Bounds bounds = new Bounds(0, 0, 0, 4, 0, 2);
         final MCVirtualSpace<BImpl> sampleSource = new MCVirtualSpace<>(bounds, AIR);
         /* Making a little 2D path with stone at the corners:
